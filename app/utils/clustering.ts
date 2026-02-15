@@ -3,7 +3,7 @@ import type { Photo, FaceCluster } from './types';
 import { getDB } from './db';
 
 // Threshold for face similarity. 0.6 is standard for dlib/face-api.js
-const CLUSTER_THRESHOLD = 0.35;
+export const CLUSTER_THRESHOLD = 0.4;
 
 export async function clusterFaces(sessionId: string): Promise<FaceCluster[]> {
   const db = await getDB();

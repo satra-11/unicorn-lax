@@ -1,76 +1,110 @@
+<script setup lang="ts">
+import { ref, watch } from 'vue';
+import { usePhotoProcessor } from '~/composables/usePhotoProcessor';
+import FaceClusterSelector from '~/components/FaceClusterSelector.vue';
+import AlbumPreview from '~/components/AlbumPreview.vue';
+import type { FaceCluster, Photo } from '~/utils/types';
+import { selectGroupBalancedPhotos, selectGrowthPhotos } from '~/utils/selection-algorithm';
+
+const { isProcessing, progress, total, currentSession } = usePhotoProcessor();
+const step = ref<'upload' | 'select-faces' | 'view-results'>('upload');
+const selectedClusters = ref<FaceCluster[]>([]);
+const selectedPhotos = ref<Photo[]>([]);
+const mode = ref<'group' | 'growth'>('group');
+const targetCount = ref(50);
+const isSelecting = ref(false);
+
+// Watch for processing completion to move to next step
+watch(() => currentSession.value?.status, (newStatus) => {
+    if (newStatus === 'completed') {
+        step.value = 'select-faces';
+    }
+});
+
+const onFacesSelected = (clusters: FaceCluster[]) => {
+    selectedClusters.value = clusters;
+};
+
+const generateAlbum = async () => {
+    if (!currentSession.value) return;
+    isSelecting.value = true;
+    try {
+        if (mode.value === 'group') {
+            selectedPhotos.value = await selectGroupBalancedPhotos(currentSession.value.id, selectedClusters.value, targetCount.value);
+        } else {
+            // Growth mode usually focuses on one child, but we support selecting one from the UI.
+            // If multiple selected, take first.
+            if (selectedClusters.value.length > 0) {
+                selectedPhotos.value = await selectGrowthPhotos(currentSession.value.id, selectedClusters.value[0], targetCount.value);
+            }
+        }
+        step.value = 'view-results';
+    } catch (e) {
+        console.error('Selection failed', e);
+    } finally {
+        isSelecting.value = false;
+    }
+};
+</script>
+
 <template>
-  <div>
-    <UPageHero
-      title="Nuxt Starter Template"
-      description="A production-ready starter template powered by Nuxt UI. Build beautiful, accessible, and performant applications in minutes, not hours."
-      :links="[{
-        label: 'Get started',
-        to: 'https://ui.nuxt.com/docs/getting-started/installation/nuxt',
-        target: '_blank',
-        trailingIcon: 'i-lucide-arrow-right',
-        size: 'xl'
-      }, {
-        label: 'Use this template',
-        to: 'https://github.com/nuxt-ui-templates/starter',
-        target: '_blank',
-        icon: 'i-simple-icons-github',
-        size: 'xl',
-        color: 'neutral',
-        variant: 'subtle'
-      }]"
-    />
+  <div class="min-h-screen bg-gray-50 flex flex-col items-center py-12">
+    <h1 class="text-4xl font-bold text-gray-800 mb-8">Photo Selector</h1>
+    
+    <div class="w-full max-w-4xl px-4">
+      <!-- Step 1: Upload -->
+      <div v-if="step === 'upload' || isProcessing || (currentSession?.status === 'processing')" class="bg-white p-6 rounded shadow mb-6">
+        <PhotoUploader />
+      </div>
 
-    <UPageSection
-      id="features"
-      title="Everything you need to build modern Nuxt apps"
-      description="Start with a solid foundation. This template includes all the essentials for building production-ready applications with Nuxt UI's powerful component system."
-      :features="[{
-        icon: 'i-lucide-rocket',
-        title: 'Production-ready from day one',
-        description: 'Pre-configured with TypeScript, ESLint, Tailwind CSS, and all the best practices. Focus on building features, not setting up tooling.'
-      }, {
-        icon: 'i-lucide-palette',
-        title: 'Beautiful by default',
-        description: 'Leveraging Nuxt UI\'s design system with automatic dark mode, consistent spacing, and polished components that look great out of the box.'
-      }, {
-        icon: 'i-lucide-zap',
-        title: 'Lightning fast',
-        description: 'Optimized for performance with SSR/SSG support, automatic code splitting, and edge-ready deployment. Your users will love the speed.'
-      }, {
-        icon: 'i-lucide-blocks',
-        title: '100+ components included',
-        description: 'Access Nuxt UI\'s comprehensive component library. From forms to navigation, everything is accessible, responsive, and customizable.'
-      }, {
-        icon: 'i-lucide-code-2',
-        title: 'Developer experience first',
-        description: 'Auto-imports, hot module replacement, and TypeScript support. Write less boilerplate and ship more features.'
-      }, {
-        icon: 'i-lucide-shield-check',
-        title: 'Built for scale',
-        description: 'Enterprise-ready architecture with proper error handling, SEO optimization, and security best practices built-in.'
-      }]"
-    />
+      <!-- Step 2: Select Faces -->
+      <div v-if="step === 'select-faces' && currentSession" class="bg-white p-6 rounded shadow mb-6">
+        <h2 class="text-xl font-bold mb-4">Select Target People</h2>
+        
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700">Mode</label>
+            <select v-model="mode" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                <option value="group">Group Balance (Multiple Children)</option>
+                <option value="growth">Individual Growth (Timeline Focus)</option>
+            </select>
+        </div>
 
-    <UPageSection>
-      <UPageCTA
-        title="Ready to build your next Nuxt app?"
-        description="Join thousands of developers building with Nuxt and Nuxt UI. Get this template and start shipping today."
-        variant="subtle"
-        :links="[{
-          label: 'Start building',
-          to: 'https://ui.nuxt.com/docs/getting-started/installation/nuxt',
-          target: '_blank',
-          trailingIcon: 'i-lucide-arrow-right',
-          color: 'neutral'
-        }, {
-          label: 'View on GitHub',
-          to: 'https://github.com/nuxt-ui-templates/starter',
-          target: '_blank',
-          icon: 'i-simple-icons-github',
-          color: 'neutral',
-          variant: 'outline'
-        }]"
-      />
-    </UPageSection>
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700">Target Photo Count</label>
+            <input v-model.number="targetCount" type="number" class="mt-1 block w-full pl-3 pr-10 py-2 border-gray-300 rounded-md" />
+        </div>
+
+        <p class="mb-4 text-gray-600">Select the child(ren) you want to include in the album.</p>
+        
+        <FaceClusterSelector 
+            :session="currentSession" 
+            @select="onFacesSelected" 
+        />
+        
+        <div class="mt-6 flex justify-end">
+            <button 
+                @click="generateAlbum" 
+                :disabled="selectedClusters.length === 0 || isSelecting"
+                class="px-6 py-2 bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                {{ isSelecting ? 'Generating...' : 'Generate Album' }}
+            </button>
+        </div>
+      </div>
+      
+      <!-- Step 3: View Results -->
+      <div v-if="step === 'view-results'" class="bg-white p-6 rounded shadow mb-6">
+          <h2 class="text-xl font-bold mb-4">Album Preview</h2>
+          <p class="mb-4">Selected {{ selectedPhotos.length }} photos.</p>
+          
+          <AlbumPreview :photos="selectedPhotos" />
+          
+          <div class="mt-6 flex justify-end gap-2">
+              <button @click="step = 'select-faces'" class="px-4 py-2 border rounded">Back</button>
+              <!-- <button class="px-4 py-2 bg-green-600 text-white rounded">Export List</button> -->
+          </div>
+      </div>
+
+    </div>
   </div>
 </template>

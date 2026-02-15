@@ -1,3 +1,4 @@
+/public/images/*
 # Nuxt dev/build outputs
 .output
 .data

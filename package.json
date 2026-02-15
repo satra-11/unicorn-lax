@@ -22,9 +22,10 @@
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.14.0",
+    "@types/node": "^25.2.3",
     "eslint": "^10.0.0",
     "typescript": "^5.9.3",
     "vue-tsc": "^3.2.4"
   },
-  "packageManager": "pnpm@10.29.2"
+  "packageManager": "bun@1.2.2"
 }

@@ -35,11 +35,6 @@ const loadData = async () => {
         confirmedIds.value = new Set(props.cluster.confirmedPhotoIds || []);
         
         // 2. Load photos for this cluster
-        // The cluster has photoIds. We need to fetch the actual Photo objects to display thumbnails.
-        // We could fetch one by one, but if the session is cached it might be fast.
-        // Or we might want to let the user "Search" for missed photos? 
-        // For now, let's just show the CURRENTLY assigned ones + Confirmed ones (union).
-        
         const allIds = new Set([...props.cluster.photoIds, ...(props.cluster.confirmedPhotoIds || [])]);
         const photoPromises = Array.from(allIds).map(id => getPhoto(id));
         const results = await Promise.all(photoPromises);
@@ -51,6 +46,10 @@ const loadData = async () => {
         isLoading.value = false;
     }
 };
+
+onMounted(() => {
+    loadData();
+});
 
 watch(() => props.isOpen, (newVal) => {
     if (newVal) loadData();
@@ -165,10 +164,11 @@ const getPhotoUrl = (photo: Photo) => {
               <div class="flex justify-between items-end mb-3">
                   <div>
                       <h3 class="text-sm font-semibold text-gray-900">
-                          {{ isUnrecognized ? '画像一覧' : '学習データ (フィードバック)' }}
+                          {{ isUnrecognized ? '画像一覧' : '分類された写真 (内訳)' }}
                       </h3>
                       <p v-if="!isUnrecognized" class="text-xs text-gray-500 mt-1">
-                          正しい写真をクリックして「確定(緑枠)」してください。<br>確定した写真を基に、AIがこの人の顔の特徴を再学習します。
+                          この人物として分類された写真の一覧です。<br>
+                          間違っている写真があれば、クリックして除外できます (緑枠が確定)。
                       </p>
                       <p v-else class="text-xs text-gray-500 mt-1">
                           顔が検出されなかった画像です。

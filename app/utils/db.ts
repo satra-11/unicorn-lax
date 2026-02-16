@@ -59,6 +59,11 @@ export async function getPhotosBySession(sessionId: string) {
   return db.getAllFromIndex('photos', 'by-session', sessionId);
 }
 
+export async function getPhoto(id: string) {
+  const db = await getDB();
+  return db.get('photos', id);
+}
+
 export async function saveSession(session: ProcessingSession) {
   const db = await getDB();
   return db.put('sessions', session);

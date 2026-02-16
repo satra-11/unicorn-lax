@@ -34,4 +34,13 @@ export interface FaceCluster {
   descriptor: Float32Array; // centroid or representative descriptor
   photoIds: string[];
   thumbnail?: Blob; // Face crop
+  
+  // User configuration for this cluster
+  config?: {
+    similarityThreshold?: number; // Custom threshold (default 0.4)
+  };
+  
+  // IDs of photos explicitly confirmed by user as belonging to this cluster
+  // Used to recalculate centroid and improve accuracy
+  confirmedPhotoIds?: string[];
 }

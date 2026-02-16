@@ -64,7 +64,7 @@ const unmatchedPhotos = computed(() =>
   <div>
     <div class="mb-4 flex items-center justify-between">
       <p class="text-sm text-gray-500">
-        {{ includedCount }} / {{ photos.length }} photos included
+        {{ includedCount }} / {{ photos.length }} 枚 選択中
       </p>
     </div>
 
@@ -72,7 +72,7 @@ const unmatchedPhotos = computed(() =>
     <div v-if="matchedPhotos.length > 0" class="mb-6">
       <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
         <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-100 text-green-600 text-xs">✓</span>
-        Face Matched ({{ matchedPhotos.length }})
+        顔認識あり ({{ matchedPhotos.length }})
       </h3>
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         <div
@@ -112,7 +112,7 @@ const unmatchedPhotos = computed(() =>
     <div v-if="unmatchedPhotos.length > 0">
       <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
         <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 text-amber-600 text-xs">⚠</span>
-        No Face Detected ({{ unmatchedPhotos.length }})
+        顔未検出 ({{ unmatchedPhotos.length }})
       </h3>
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         <div

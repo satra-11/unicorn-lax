@@ -77,22 +77,22 @@ const confirmSelection = () => {
 
       <!-- Step 2: Select Faces -->
       <div v-if="step === 'select-faces' && currentSession" class="bg-white p-6 rounded shadow mb-6">
-        <h2 class="text-xl font-bold mb-4 text-black">Select Target People</h2>
+        <h2 class="text-xl font-bold mb-4 text-black">対象の人物を選択</h2>
 
         <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700">Mode</label>
+            <label class="block text-sm font-medium text-gray-700">モード選択</label>
             <select v-model="mode" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
-                <option value="group">Group Balance (Multiple Children)</option>
-                <option value="growth">Individual Growth (Timeline Focus)</option>
+                <option value="group">グループバランス (複数人のバランス重視)</option>
+                <option value="growth">成長記録 (特定の1人の時系列)</option>
             </select>
         </div>
 
         <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700">Target Photo Count</label>
+            <label class="block text-sm font-medium text-gray-700">選定枚数 (目標)</label>
             <input v-model.number="targetCount" type="number" class="mt-1 block w-full pl-3 pr-10 py-2 border-gray-300 rounded-md" />
         </div>
 
-        <p class="mb-4 text-gray-600 text-black">Select the child(ren) you want to include in the album.</p>
+        <p class="mb-4 text-gray-600 text-black">アルバムに入れたい人物を選択してください。</p>
 
         <FaceClusterSelector
             :session="currentSession"
@@ -105,15 +105,15 @@ const confirmSelection = () => {
                 :disabled="selectedClusters.length === 0 || isSelecting"
                 class="px-6 py-2 bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
             >
-                {{ isSelecting ? 'Generating...' : 'Generate Album' }}
+                {{ isSelecting ? '生成中...' : 'アルバム候補を生成' }}
             </button>
         </div>
       </div>
 
       <!-- Step 3: Review -->
       <div v-if="step === 'review'" class="bg-white p-6 rounded shadow mb-6">
-          <h2 class="text-xl font-bold mb-2">Review Photos</h2>
-          <p class="mb-4 text-sm text-gray-500">Click photos to include or exclude them. Photos without detected faces are shown separately so you can decide.</p>
+          <h2 class="text-xl font-bold mb-2">写真の確認・調整</h2>
+          <p class="mb-4 text-sm text-gray-500">クリックして除外/追加を切り替えられます。顔が検出されなかった写真も下に表示されています。</p>
 
           <AlbumPreview
             :photos="generatedPhotos"
@@ -121,20 +121,20 @@ const confirmSelection = () => {
           />
 
           <div class="mt-6 flex justify-between items-center">
-              <button @click="step = 'select-faces'" class="px-4 py-2 border rounded text-gray-700 hover:bg-gray-50">Back</button>
+              <button @click="step = 'select-faces'" class="px-4 py-2 border rounded text-gray-700 hover:bg-gray-50">戻る</button>
               <button
                 @click="confirmSelection"
                 class="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
               >
-                Confirm Selection ({{ confirmedPhotos.length }} photos)
+                選択を確定する ({{ confirmedPhotos.length }} 枚)
               </button>
           </div>
       </div>
 
       <!-- Step 4: Confirmed -->
       <div v-if="step === 'confirmed'" class="bg-white p-6 rounded shadow mb-6">
-          <h2 class="text-xl font-bold mb-2">Selection Confirmed</h2>
-          <p class="mb-4 text-gray-600">{{ confirmedPhotos.length }} photos finalized.</p>
+          <h2 class="text-xl font-bold mb-2">選定完了</h2>
+          <p class="mb-4 text-gray-600">{{ confirmedPhotos.length }} 枚の写真を確定しました。</p>
 
           <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             <div
@@ -152,7 +152,7 @@ const confirmSelection = () => {
           </div>
 
           <div class="mt-6 flex justify-between gap-2">
-              <button @click="step = 'review'" class="px-4 py-2 border rounded text-gray-700 hover:bg-gray-50">Back to Review</button>
+              <button @click="step = 'review'" class="px-4 py-2 border rounded text-gray-700 hover:bg-gray-50">確認画面に戻る</button>
           </div>
       </div>
 

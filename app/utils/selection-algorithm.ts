@@ -20,7 +20,8 @@ function matchPhotoToSubjects(
   const subjects = new Set<string>();
   for (const face of photo.faces) {
     for (const cluster of targetClusters) {
-      if (faceapi.euclideanDistance(face.descriptor, cluster.descriptor) < CLUSTER_THRESHOLD) {
+      const threshold = cluster.config?.similarityThreshold ?? CLUSTER_THRESHOLD;
+      if (faceapi.euclideanDistance(face.descriptor, cluster.descriptor) < threshold) {
         subjects.add(cluster.id);
       }
     }

@@ -184,9 +184,11 @@ export async function recalculateClusterCentroid(clusterId: string): Promise<voi
       
       for (const desc of allDescriptors) {
           for (let i = 0; i < numDims; i++) {
+
               const val = desc[i];
-              if (val !== undefined) {
-                  mean[i] += val;
+              const current = mean[i];
+              if (val !== undefined && current !== undefined) {
+                  mean[i] = current + val;
               }
           }
       }
@@ -228,3 +230,12 @@ function findExistingLabel(
   return defaultLabel;
 }
 
+
+export async function getUnrecognizedPhotos(sessionId: string): Promise<Photo[]> {
+  const db = await getDB();
+  const photos = await db.getAllFromIndex('photos', 'by-session', sessionId);
+  
+  // Filter for photos that have no faces detected
+  // unrecognized means: faces array is empty or undefined, OR noFaceMatch is true (though noFaceMatch might be used for logic elsewhere)
+  return photos.filter(p => !p.faces || p.faces.length === 0);
+}

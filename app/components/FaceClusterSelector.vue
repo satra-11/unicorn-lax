@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, nextTick } from 'vue';
 import type { FaceCluster, ProcessingSession } from '~/utils/types';
-import { clusterFaces } from '~/utils/clustering';
+import { clusterFaces, getUnrecognizedPhotos } from '~/utils/clustering';
 import { updateClusterLabel } from '~/utils/db';
 import FaceClusterSettings from '~/components/FaceClusterSettings.vue';
 
@@ -24,17 +24,41 @@ const editInputRef = ref<HTMLInputElement | null>(null);
 const showSettings = ref(false);
 const settingsCluster = ref<FaceCluster | null>(null);
 
-const loadClusters = async () => {
-    if (!props.session) return;
-    isLoading.value = true;
-    try {
-        clusters.value = await clusterFaces(props.session.id);
-    } catch (e) {
-        console.error('Clustering failed', e);
-    } finally {
-        isLoading.value = false;
-    }
-};
+
+    
+    // Import the new function - we need to update imports first, but let's do logic here
+    const loadClusters = async () => {
+        if (!props.session) return;
+        isLoading.value = true;
+        try {
+            const [detectedClusters, unrecognizedPhotos] = await Promise.all([
+                clusterFaces(props.session.id),
+                getUnrecognizedPhotos(props.session.id)
+            ]);
+            
+            // Add unrecognized cluster if there are any photos
+            if (unrecognizedPhotos.length > 0) {
+                const unrecognizedCluster: FaceCluster = {
+                    id: 'unrecognized',
+                    label: '未検出 (Unrecognized)',
+                    descriptor: new Float32Array(0), // Dummy
+                    photoIds: unrecognizedPhotos.map(p => p.id),
+                    // Use the first photo as thumbnail if available, otherwise it's fine
+                    thumbnail: unrecognizedPhotos[0]?.thumbnail
+                };
+                // Append to end
+                clusters.value = [...detectedClusters, unrecognizedCluster];
+            } else {
+                clusters.value = detectedClusters;
+            }
+
+        } catch (e) {
+            console.error('Clustering failed', e);
+        } finally {
+            isLoading.value = false;
+        }
+    };
+
 
 onMounted(loadClusters);
 watch(() => props.session, loadClusters);

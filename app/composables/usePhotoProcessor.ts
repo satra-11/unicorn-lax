@@ -8,6 +8,15 @@ const isProcessing = ref(false);
 const progress = ref(0);
 const total = ref(0);
 const currentSession = ref<ProcessingSession | null>(null);
+const faceModel = ref<'ssd' | 'tiny'>('ssd'); // Default to SSD
+
+// Initialize from localStorage if client-side
+if (import.meta.client) {
+    const saved = localStorage.getItem('face-model');
+    if (saved === 'ssd' || saved === 'tiny') {
+        faceModel.value = saved;
+    }
+}
 
 let worker: Worker | null = null;
 const pendingRequests = new Map<string, { resolve: (val: any) => void, reject: (err: any) => void }>();
@@ -27,6 +36,8 @@ const initWorker = () => {
             const { type, id, payload, error } = e.data;
             if (type === 'INIT_SUCCESS') {
                 console.log('Worker initialized successfully');
+            } else if (type === 'SET_MODEL_SUCCESS') {
+                console.log('Worker model switched successfully');
             } else if (type === 'DETECT_SUCCESS') {
                 const req = pendingRequests.get(id);
                 if (req) {
@@ -49,15 +60,35 @@ const initWorker = () => {
             console.error('Worker error event:', e);
         };
 
-        console.log('Sending INIT message to worker');
-        worker.postMessage({ type: 'INIT', id: 'init' });
+        console.log('Sending INIT message to worker with model:', faceModel.value);
+        worker.postMessage({ 
+            type: 'INIT', 
+            id: 'init',
+            payload: { useSsd: faceModel.value === 'ssd' }
+        });
     } catch (e) {
         console.error('Failed to init worker', e);
     }
 };
 
+const setFaceModel = (model: 'ssd' | 'tiny') => {
+    faceModel.value = model;
+    if (import.meta.client) {
+        localStorage.setItem('face-model', model);
+    }
+    
+    if (worker) {
+        console.log('Switching worker model to:', model);
+        worker.postMessage({
+            type: 'SET_MODEL',
+            id: 'config',
+            payload: { useSsd: model === 'ssd' }
+        });
+    }
+};
+
 const detectFacesInWorker = async (photoId: string, imageBitmap: ImageBitmap) => {
-    if (!worker) return [];
+    if (!worker) initWorker(); // Ensure worker is init
     return new Promise<any>((resolve, reject) => {
         pendingRequests.set(photoId, { resolve, reject });
         worker!.postMessage({ type: 'DETECT', id: photoId, payload: { imageBitmap } }, [imageBitmap]);
@@ -70,8 +101,12 @@ export const usePhotoProcessor = () => {
     initWorker();
     
     // ... (rest of logic similar, updated for faces)
-    const fileArray = Array.from(files).filter(f => f.type.startsWith('image/'));
-    if (fileArray.length === 0) return;
+    const MIN_SIZE = 10 * 1024; // 10KB
+    const fileArray = Array.from(files).filter(f => f.type.startsWith('image/') && f.size >= MIN_SIZE);
+    if (fileArray.length === 0) {
+        alert('画像が見つかりません、または全ての画像が10KB未満です。');
+        return;
+    }
 
     isProcessing.value = true;
     total.value = fileArray.length;
@@ -93,6 +128,8 @@ export const usePhotoProcessor = () => {
 
     const BATCH_SIZE = 5;
     
+    const processedHashesInSession = new Set<string>();
+    
     for (let i = 0; i < fileArray.length; i += BATCH_SIZE) {
         const batch = fileArray.slice(i, i + BATCH_SIZE);
         await Promise.all(batch.map(async (file) => {
@@ -100,28 +137,46 @@ export const usePhotoProcessor = () => {
                 const meta = await extractMetadata(file); // This might consume the file stream?
                 const hash = await calculateHash(file);
                 
-                // Check for duplicates
+                // 1. Check if we already processed this hash IN THIS SESSION (e.g. user selected same file twice)
+                if (processedHashesInSession.has(hash)) {
+                    console.log('Skipping duplicate photo in current batch (in-memory test):', file.name);
+                    progress.value++;
+                    return;
+                }
+                processedHashesInSession.add(hash);
+
+                // 2. Check for duplicates in DB
                 const existing = await getPhotoByHash(hash);
                 if (existing) {
-                    if (existing.sessionId === sessionId) {
-                         console.log('Skipping duplicate photo in same session:', file.name);
-                         progress.value++; 
-                         return; 
+                    // Check if existing photo was analyzed with the SAME model
+                    // If model changed (e.g. from 'tiny' to 'ssd'), we should re-analyze
+                    const modelMatch = existing.detectionModel === faceModel.value;
+                    
+                    if (modelMatch) {
+                        if (existing.sessionId === sessionId) {
+                             console.log('Skipping duplicate photo in same session (DB check):', file.name);
+                             progress.value++; 
+                             return; 
+                        } else {
+                            console.log('Found existing photo from previous session, reusing data:', file.name);
+                            // Reuse existing analysis data but create new photo record for this session
+                             const reusedPhoto: Photo = {
+                                ...existing,
+                                id: crypto.randomUUID(),
+                                sessionId,
+                                name: file.name, // Use current file name just in case
+                                relativePath: (file as any).webkitRelativePath || file.name,
+                                // Ensure we keep the hash & model
+                                hash,
+                                detectionModel: existing.detectionModel
+                            };
+                            await savePhoto(reusedPhoto);
+                            progress.value++;
+                            return;
+                        }
                     } else {
-                        console.log('Found existing photo from previous session, reusing data:', file.name);
-                        // Reuse existing analysis data but create new photo record for this session
-                         const reusedPhoto: Photo = {
-                            ...existing,
-                            id: crypto.randomUUID(),
-                            sessionId,
-                            name: file.name, // Use current file name just in case
-                            relativePath: (file as any).webkitRelativePath || file.name,
-                            // Ensure we keep the hash
-                            hash,
-                        };
-                        await savePhoto(reusedPhoto);
-                        progress.value++;
-                        return;
+                        console.log(`Re-analyzing photo ${file.name} due to model change (Old: ${existing.detectionModel}, New: ${faceModel.value})`);
+                        // Proceed to re-analyze (fall through)
                     }
                 }
 
@@ -133,6 +188,7 @@ export const usePhotoProcessor = () => {
                     timestamp: meta.timestamp,
                     dateStr: meta.dateStr,
                     hash,
+                    detectionModel: faceModel.value
                 };
 
                 if (worker) {
@@ -236,6 +292,8 @@ export const usePhotoProcessor = () => {
     isProcessing,
     progress,
     total,
-    currentSession
+    currentSession,
+    faceModel,
+    setFaceModel,
   };
 };

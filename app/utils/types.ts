@@ -17,6 +17,7 @@ export interface Photo {
   noFaceMatch?: boolean;
   excluded?: boolean;
   hash?: string;
+  detectionModel?: 'ssd' | 'tiny';
 }
 
 export interface ProcessingSession {

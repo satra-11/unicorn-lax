@@ -2,7 +2,11 @@ import type * as FaceApi from 'face-api.js';
 
 // Environment configuration
 const MODELS_URL = '/models';
-const MIN_CONFIDENCE = 0.2;
+const MIN_CONFIDENCE = 0.45;
+
+// NEW: Configuration to easily switch between models
+let useSsdMobilenetv1 = true;
+let currentModelLoaded = false;
 
 let faceapi: typeof FaceApi;
 let isLoaded = false;
@@ -67,50 +71,56 @@ if (typeof (self as any).HTMLElement === 'undefined') {
 if (typeof (self as any).screen === 'undefined') {
     (self as any).screen = { width: 1920, height: 1080 };
 }
-
-// ----------------------------------------------------------------------
 // Model Loading & Initialization
 // ----------------------------------------------------------------------
 
 async function loadModels() {
-  if (isLoaded) return;
+  if (isLoaded && currentModelLoaded) return;
   console.log('Worker: Loading face-api.js...');
 
   try {
-      // Import face-api.js only AFTER polyfills are set
-      faceapi = await import('face-api.js');
-      
-      console.log('Worker: face-api.js imported. Loading models...');
+      if (!faceapi) {
+          // Import face-api.js only AFTER polyfills are set
+          faceapi = await import('face-api.js');
+          console.log('Worker: face-api.js imported. Loading models...');
 
-      // With our polyfills (including CanvasRenderingContext2D), isBrowser() should
-      // return true and initialize() should have set the environment automatically.
-      // But if it didn't, we use setEnv() directly (which does NOT call getEnv()).
-      try {
-          const testEnv = faceapi.env.getEnv();
-          console.log('Worker: Environment already initialized:', !!testEnv);
-      } catch {
-          console.log('Worker: Environment not initialized, calling setEnv() directly...');
-          const CanvasClass = canvasPolyfill as any;
-          const ImageClass = (self as any).HTMLImageElement;
-          faceapi.env.setEnv({
-              Canvas: CanvasClass,
-              CanvasRenderingContext2D: (self as any).CanvasRenderingContext2D,
-              Image: ImageClass,
-              ImageData: ImageData,
-              Video: (self as any).HTMLVideoElement,
-              createCanvasElement: () => new CanvasClass(1, 1),
-              createImageElement: () => new ImageClass(),
-              fetch: self.fetch.bind(self),
-              readFile: () => { throw new Error('readFile not available in worker'); },
-          } as any);
+          // Environment setup (same as before)
+          try {
+              const testEnv = faceapi.env.getEnv();
+              console.log('Worker: Environment already initialized:', !!testEnv);
+          } catch {
+              console.log('Worker: Environment not initialized, calling setEnv() directly...');
+              const CanvasClass = canvasPolyfill as any;
+              const ImageClass = (self as any).HTMLImageElement;
+              faceapi.env.setEnv({
+                  Canvas: CanvasClass,
+                  CanvasRenderingContext2D: (self as any).CanvasRenderingContext2D,
+                  Image: ImageClass,
+                  ImageData: ImageData,
+                  Video: (self as any).HTMLVideoElement,
+                  createCanvasElement: () => new CanvasClass(1, 1),
+                  createImageElement: () => new ImageClass(),
+                  fetch: self.fetch.bind(self),
+                  readFile: () => { throw new Error('readFile not available in worker'); },
+              } as any);
+          }
       }
       
-      // await faceapi.nets.ssdMobilenetv1.loadFromUri(MODELS_URL);
-      await faceapi.nets.tinyFaceDetector.loadFromUri(MODELS_URL + '/tiny_face_detector');
-      await faceapi.nets.faceLandmark68Net.loadFromUri(MODELS_URL);
-      await faceapi.nets.faceRecognitionNet.loadFromUri(MODELS_URL);
+      if (useSsdMobilenetv1) {
+          console.log('Worker: Loading SSD MobileNet V1...');
+          await faceapi.nets.ssdMobilenetv1.loadFromUri(MODELS_URL);
+      } else {
+          console.log('Worker: Loading TinyFaceDetector...');
+          await faceapi.nets.tinyFaceDetector.loadFromUri(MODELS_URL + '/tiny_face_detector');
+      }
+
+      if (!isLoaded) {
+          await faceapi.nets.faceLandmark68Net.loadFromUri(MODELS_URL);
+          await faceapi.nets.faceRecognitionNet.loadFromUri(MODELS_URL);
+      }
       
       isLoaded = true;
+      currentModelLoaded = true;
       console.log('Worker: Models loaded successfully.');
   } catch (error) {
       console.error('Worker: Failed to load models:', error);
@@ -127,19 +137,24 @@ self.onmessage = async (e: MessageEvent) => {
 
   try {
     if (type === 'INIT') {
+      if (payload && typeof payload.useSsd !== 'undefined') {
+          useSsdMobilenetv1 = payload.useSsd;
+      }
       await loadModels();
       postMessage({ type: 'INIT_SUCCESS', id });
+    } else if (type === 'SET_MODEL') {
+        const newUseSsd = payload.useSsd;
+        if (newUseSsd !== useSsdMobilenetv1) {
+            useSsdMobilenetv1 = newUseSsd;
+            currentModelLoaded = false; // Force reload of detector
+            await loadModels();
+        }
+        postMessage({ type: 'SET_MODEL_SUCCESS', id });
     } else if (type === 'DETECT') {
-      if (!isLoaded) await loadModels();
+      if (!isLoaded || !currentModelLoaded) await loadModels();
       
       const { imageBitmap } = payload;
       console.time(`FaceDetection-${id}`);
-      
-      // In worker, we must assume face-api handles ImageBitmap if env is patched correctly.
-      // If not, we might need to draw to OffscreenCanvas first, but let's try direct first.
-      // UPDATE: face-api.js threw error "expected media to be of type ... HTMLCanvasElement".
-      // ImageBitmap is not directly supported by toNetInput checks in face-api.js.
-      // We must convert to OffscreenCanvas (which masquerades as HTMLCanvasElement via polyfill).
       
       let input: any = imageBitmap;
       if (typeof OffscreenCanvas !== 'undefined') {
@@ -151,15 +166,21 @@ self.onmessage = async (e: MessageEvent) => {
           }
       }
 
-      // const options = new faceapi.SsdMobilenetv1Options({ minConfidence: MIN_CONFIDENCE });
-      const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: MIN_CONFIDENCE });
+      let options: FaceApi.SsdMobilenetv1Options | FaceApi.TinyFaceDetectorOptions;
+
+      if (useSsdMobilenetv1) {
+          options = new faceapi.SsdMobilenetv1Options({ minConfidence: MIN_CONFIDENCE });
+      } else {
+          options = new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: MIN_CONFIDENCE });
+      }
+
       const detections = await faceapi
         .detectAllFaces(input, options)
         .withFaceLandmarks()
         .withFaceDescriptors();
         
       console.timeEnd(`FaceDetection-${id}`);
-      console.log(`Worker: Detected ${detections.length} faces for ${id}`);
+      console.log(`Worker: Detected ${detections.length} faces for ${id} using ${useSsdMobilenetv1 ? 'SSD' : 'Tiny'}`);
 
       const results = detections.map(d => ({
         detection: d.detection.box,
@@ -168,7 +189,6 @@ self.onmessage = async (e: MessageEvent) => {
 
       postMessage({ type: 'DETECT_SUCCESS', id, payload: results });
       
-      // Clean up
       if (imageBitmap && typeof (imageBitmap as any).close === 'function') {
           (imageBitmap as ImageBitmap).close();
       }

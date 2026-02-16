@@ -106,8 +106,10 @@ export async function updateClusterLabel(id: string, label: string) {
 }
 
 export async function clearExisitingData() {
+  console.log('Clearing existing data...');
   const db = await getDB();
   await db.clear('photos');
   await db.clear('sessions');
   await db.clear('clusters');
+  console.log('Existing data cleared.');
 }

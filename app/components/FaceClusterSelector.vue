@@ -59,6 +59,11 @@ const settingsCluster = ref<FaceCluster | null>(null);
         }
     };
 
+    const handleSettingsUpdate = async () => {
+        await loadClusters(); // Reload data
+        showSettings.value = false; // Close modal
+    };
+
 
 onMounted(loadClusters);
 watch(() => props.session, loadClusters);
@@ -152,13 +157,14 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
                     @blur="commitLabel(cluster)"
                   />
                 </div>
+
                 <div
                   v-else
-                  class="flex items-center justify-center gap-1 group"
+                  class="flex items-center justify-center gap-1 cursor-text hover:bg-gray-50 rounded px-1 transition-colors"
                   @click.stop="startEditing(cluster)"
                 >
                   <span class="text-xs font-medium truncate">{{ cluster.label }}</span>
-                  <span class="text-gray-400 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">✏️</span>
+                  <span class="text-gray-400 text-[10px]">✏️</span>
                 </div>
                 <div class="text-[10px] text-gray-400 mt-0.5">{{ cluster.photoIds.length }} 枚</div>
             </div>
@@ -188,7 +194,7 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
         :session-id="props.session.id"
         :is-open="showSettings"
         @close="showSettings = false"
-        @update="loadClusters"
+        @update="handleSettingsUpdate"
     />
   </div>
 </template>

@@ -18,6 +18,7 @@ const emit = defineEmits<{
 const isLoading = ref(false);
 const photos = ref<Photo[]>([]);
 const threshold = ref(0.4);
+const label = ref('');
 
 // We need to know which photos are "confirmed" vs just "auto-assigned"
 const confirmedIds = ref<Set<string>>(new Set());
@@ -32,6 +33,7 @@ const loadData = async () => {
     try {
         // 1. Setup local state from cluster config
         threshold.value = props.cluster.config?.similarityThreshold ?? 0.4;
+        label.value = props.cluster.label;
         confirmedIds.value = new Set(props.cluster.confirmedPhotoIds || []);
         
         // 2. Load photos for this cluster
@@ -72,8 +74,18 @@ const saveSettings = async () => {
     // Save confirmed IDs
     updated.confirmedPhotoIds = Array.from(confirmedIds.value);
     
-    await saveCluster(updated);
-    emit('update');
+    // Save label and other settings
+    if (label.value !== props.cluster.label) {
+        updated.label = label.value;
+    }
+
+    try {
+        await saveCluster(updated);
+        emit('update');
+    } catch (e: any) {
+        console.error('Failed to save settings:', e);
+        alert(`Failed to save settings: ${e.message}`);
+    }
 };
 // ... (skip down to template)
 
@@ -139,6 +151,17 @@ const getPhotoUrl = (photo: Photo) => {
         </div>
 
         <div class="p-6 space-y-8 flex-1 overflow-y-auto">
+          <!-- Label Editing -->
+          <div v-if="!isUnrecognized">
+              <label class="block text-sm font-medium text-gray-700 mb-1">名前 (Label)</label>
+              <input 
+                  v-model="label"
+                  type="text"
+                  class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
+                  placeholder="名前を入力"
+              />
+          </div>
+
           <!-- Threshold Settings - Hidden for Unrecognized -->
           <div v-if="!isUnrecognized" class="bg-gray-50 p-5 rounded-lg border border-gray-100">
               <h3 class="text-sm font-semibold text-gray-900 mb-3">認識感度 (類似度しきい値)</h3>

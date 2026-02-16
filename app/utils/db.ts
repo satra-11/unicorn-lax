@@ -5,7 +5,7 @@ interface AppDB extends DBSchema {
   photos: {
     key: string; // photo id
     value: Photo;
-    indexes: { 'by-session': string; 'by-timestamp': number };
+    indexes: { 'by-session': string; 'by-timestamp': number; 'by-hash': string };
   };
   sessions: {
     key: string; // session id
@@ -18,18 +18,25 @@ interface AppDB extends DBSchema {
 }
 
 const DB_NAME = 'photo-selector-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbPromise: Promise<IDBPDatabase<AppDB>>;
 
 export function getDB() {
   if (!dbPromise) {
     dbPromise = openDB<AppDB>(DB_NAME, DB_VERSION, {
-      upgrade(db) {
+      upgrade(db, oldVersion, newVersion, transaction) {
         if (!db.objectStoreNames.contains('photos')) {
           const store = db.createObjectStore('photos', { keyPath: 'id' });
           store.createIndex('by-session', 'sessionId'); // Make sure Photo has sessionId
           store.createIndex('by-timestamp', 'timestamp');
+          store.createIndex('by-hash', 'hash');
+        } else {
+            // Migration for existing DB
+            const store = transaction.objectStore('photos');
+            if (!store.indexNames.contains('by-hash')) {
+                store.createIndex('by-hash', 'hash');
+            }
         }
         if (!db.objectStoreNames.contains('sessions')) {
           db.createObjectStore('sessions', { keyPath: 'id' });
@@ -57,6 +64,11 @@ export async function getPhotosBySession(sessionId: string) {
   // But wait, getAllFromIndex is better.
   // We will assume Photo has a sessionId field.
   return db.getAllFromIndex('photos', 'by-session', sessionId);
+}
+
+export async function getPhotoByHash(hash: string): Promise<Photo | undefined> {
+  const db = await getDB();
+  return db.getFromIndex('photos', 'by-hash', hash);
 }
 
 export async function getPhoto(id: string) {

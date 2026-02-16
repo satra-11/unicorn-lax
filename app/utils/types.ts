@@ -16,6 +16,7 @@ export interface Photo {
   thumbnail?: Blob;
   noFaceMatch?: boolean;
   excluded?: boolean;
+  hash?: string;
 }
 
 export interface ProcessingSession {

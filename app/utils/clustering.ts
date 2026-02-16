@@ -12,21 +12,63 @@ export async function clusterFaces(sessionId: string): Promise<FaceCluster[]> {
   const db = await getDB();
   const photos = await db.getAllFromIndex('photos', 'by-session', sessionId);
   
-  // Load previously saved clusters to carry over user-assigned labels
-  const existingClusters = await getAllClusters();
+  // 1. Load previously saved clusters
+  let clusters = await getAllClusters();
 
-  // Extract all faces with their photoId
-  const allFaces: { descriptor: Float32Array; photoId: string; box: any; thumbnail?: Blob }[] = [];
+  // 2. Identify all photo IDs in the current session
+  const sessionPhotoIds = new Set(photos.map(p => p.id));
+
+  // 3. "Clean" existing clusters by removing photos from the current session
+  //    This allows us to re-cluster them potentially into different groups if thresholds changed.
+  //    However, we MUST keep "confirmed" photos if they are in this session? 
+  //    Actually, if a photo is "confirmed" in a cluster, it should probably stay there unless we are doing a full re-calc.
+  //    For now, let's assume `clusterFaces` is run when opening the page or when requested, 
+  //    and it should primarily group *unassigned* faces or re-group if settings changed.
+  //    If we want to respect "confirmed" faces, we should skip clustering for them.
   
+  //    Let's refine:
+  //    - If a photo has been "confirmed" manually by user into Cluster A, we should NOT move it.
+  //    - If it was just auto-assigned, we can re-assign it.
+  
+  //    So, for each existing cluster:
+  //      - Keep `photoIds` that are NOT in current session.
+  //      - Keep `photoIds` that ARE in current session BUT are also in `confirmedPhotoIds`.
+  //      - Remove `photoIds` that are in current session AND NOT confirmed.
+  
+  for (const cluster of clusters) {
+      const confirmed = new Set(cluster.confirmedPhotoIds || []);
+      cluster.photoIds = cluster.photoIds.filter(pid => {
+          // Keep if NOT in current session
+          if (!sessionPhotoIds.has(pid)) return true;
+          // Keep if in current session AND confirmed
+          if (confirmed.has(pid)) return true;
+          // Drop otherwise (it will be re-processed below)
+          return false;
+      });
+  }
+
+  // Extract faces from photos in this session
+  // We only want to cluster faces that are NOT already confirmed in some cluster.
+  const facesToCluster: { descriptor: Float32Array; photoId: string; box: any; thumbnail?: Blob }[] = [];
+  
+  // Build a set of confirmed photo IDs across ALL clusters to skip them
+  const allConfirmedPhotoIds = new Set<string>();
+  for (const c of clusters) {
+      if (c.confirmedPhotoIds) {
+          c.confirmedPhotoIds.forEach(id => allConfirmedPhotoIds.add(id));
+      }
+  }
+
   for (const photo of photos) {
+    if (allConfirmedPhotoIds.has(photo.id)) continue; // Skip confirmed photos
+
     if (photo.faces) {
       for (const face of photo.faces) {
-        // Ensure descriptor is a Float32Array (it may be a plain Array after IndexedDB round-trip)
         const desc = face.descriptor instanceof Float32Array 
             ? face.descriptor 
             : new Float32Array(face.descriptor);
-        console.log(`[Cluster] Photo ${photo.name}: descriptor length=${desc.length}, first 5 values=[${Array.from(desc.slice(0, 5)).map(v => v.toFixed(4))}]`);
-        allFaces.push({
+        
+        facesToCluster.push({
           descriptor: desc,
           photoId: photo.id,
           box: face.box,
@@ -36,67 +78,71 @@ export async function clusterFaces(sessionId: string): Promise<FaceCluster[]> {
     }
   }
 
-  console.log(`[Cluster] Total faces to cluster: ${allFaces.length}`);
+  console.log(`[Cluster] Processing ${facesToCluster.length} faces (excluding confirmed).`);
 
-  const clusters: FaceCluster[] = [];
-
-  for (const face of allFaces) {
+  // 4. Match faces against clusters
+  for (const face of facesToCluster) {
     let bestMatchIndex = -1;
     let minDistance = Infinity;
 
-    // Compare with existing cluster centroids
+    // Compare with existing (and potentially new) clusters
     for (let i = 0; i < clusters.length; i++) {
         const cluster = clusters[i]!;
+        
+        // Use cluster-specific threshold or default
+        const threshold = cluster.config?.similarityThreshold ?? CLUSTER_THRESHOLD;
+
         const distance = faceapi.euclideanDistance(
             Array.from(face.descriptor), 
             Array.from(cluster.descriptor)
         );
-        console.log(`[Cluster] Distance between face and cluster ${i} ("${cluster.label}"): ${distance.toFixed(4)}`);
-        if (distance < CLUSTER_THRESHOLD && distance < minDistance) {
+        
+        if (distance < threshold && distance < minDistance) {
             minDistance = distance;
             bestMatchIndex = i;
         }
     }
 
-    // Check custom threshold for the best match if it exists
     if (bestMatchIndex !== -1) {
-        const cluster = clusters[bestMatchIndex]!;
-        const threshold = cluster.config?.similarityThreshold ?? CLUSTER_THRESHOLD;
-        
-        if (minDistance > threshold) {
-            bestMatchIndex = -1; // No match within custom threshold
-        }
-    }
-
-    if (bestMatchIndex !== -1) {
+        // Add to existing cluster
         const matched = clusters[bestMatchIndex]!;
         matched.photoIds.push(face.photoId);
          if (!matched.thumbnail && face.thumbnail) {
              matched.thumbnail = face.thumbnail;
          }
     } else {
-        // Create new cluster — try to carry over label from existing persisted clusters
-        const label = findExistingLabel(existingClusters, face.descriptor, clusters.length);
-        clusters.push({
+        // Create new cluster
+        // Try to verify if this is actually a known person from OTHER sessions (already in clusters list)
+        // But we already checked all clusters in the loop above.
+        // So this is definitely a new face group *for the current constraints*.
+        
+        const newCluster: FaceCluster = {
             id: crypto.randomUUID(),
-            label,
+            label: `Person ${clusters.length + 1}`,
             descriptor: face.descriptor,
             photoIds: [face.photoId],
-            thumbnail: face.thumbnail
-        });
+            thumbnail: face.thumbnail,
+            config: { similarityThreshold: CLUSTER_THRESHOLD }
+        };
+        clusters.push(newCluster);
     }
   }
 
-  // Sort clusters by size (most frequent faces first)
+  // Sort clusters by size (descending)
   clusters.sort((a, b) => b.photoIds.length - a.photoIds.length);
 
-  // Persist clusters to DB
+  // Persist ALL clusters (updates and new ones)
   for (const cluster of clusters) {
     await saveCluster(cluster);
   }
 
-  return clusters;
-  return clusters;
+  // Return only clusters that have at least one photo from THIS session
+  // (to display in the UI for this session)
+  const relevantClusters = clusters.filter(c => 
+      c.photoIds.some(pid => sessionPhotoIds.has(pid))
+  );
+
+  return relevantClusters;
 }
 
 /**

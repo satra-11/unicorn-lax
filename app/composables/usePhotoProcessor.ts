@@ -1,7 +1,7 @@
 import { ref } from 'vue';
 import type { Photo, ProcessingSession } from '~/utils/types';
-import { extractMetadata } from '~/utils/metadata';
-import { savePhoto, saveSession } from '~/utils/db';
+import { extractMetadata, calculateHash } from '~/utils/metadata';
+import { savePhoto, saveSession, getPhotoByHash } from '~/utils/db';
 
 // Singleton State
 const isProcessing = ref(false);
@@ -98,6 +98,33 @@ export const usePhotoProcessor = () => {
         await Promise.all(batch.map(async (file) => {
             try {
                 const meta = await extractMetadata(file); // This might consume the file stream?
+                const hash = await calculateHash(file);
+                
+                // Check for duplicates
+                const existing = await getPhotoByHash(hash);
+                if (existing) {
+                    if (existing.sessionId === sessionId) {
+                         console.log('Skipping duplicate photo in same session:', file.name);
+                         progress.value++; 
+                         return; 
+                    } else {
+                        console.log('Found existing photo from previous session, reusing data:', file.name);
+                        // Reuse existing analysis data but create new photo record for this session
+                         const reusedPhoto: Photo = {
+                            ...existing,
+                            id: crypto.randomUUID(),
+                            sessionId,
+                            name: file.name, // Use current file name just in case
+                            relativePath: (file as any).webkitRelativePath || file.name,
+                            // Ensure we keep the hash
+                            hash,
+                        };
+                        await savePhoto(reusedPhoto);
+                        progress.value++;
+                        return;
+                    }
+                }
+
                 const photo: Photo = {
                     id: crypto.randomUUID(),
                     sessionId,
@@ -105,6 +132,7 @@ export const usePhotoProcessor = () => {
                     relativePath: (file as any).webkitRelativePath || file.name,
                     timestamp: meta.timestamp,
                     dateStr: meta.dateStr,
+                    hash,
                 };
 
                 if (worker) {

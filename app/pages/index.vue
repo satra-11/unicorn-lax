@@ -5,6 +5,7 @@ import FaceClusterSelector from '~/components/FaceClusterSelector.vue';
 import AlbumPreview from '~/components/AlbumPreview.vue';
 import type { FaceCluster, Photo } from '~/utils/types';
 import { selectGroupBalancedPhotos, selectGrowthPhotos } from '~/utils/selection-algorithm';
+import { clearExisitingData } from '~/utils/db';
 
 const { isProcessing, progress, total, currentSession } = usePhotoProcessor();
 const step = ref<'upload' | 'select-faces' | 'review' | 'confirmed'>('upload');
@@ -63,6 +64,13 @@ const confirmedPhotos = computed(() =>
 const confirmSelection = () => {
     step.value = 'confirmed';
 };
+
+const onResetDb = async () => {
+    if (confirm('全てのデータを消去しますか？この操作は取り消せません。')) {
+        await clearExisitingData();
+        window.location.reload();
+    }
+};
 </script>
 
 <template>
@@ -73,6 +81,9 @@ const confirmSelection = () => {
       <!-- Step 1: Upload -->
       <div v-if="step === 'upload' || isProcessing || (currentSession?.status === 'processing')" class="bg-white p-6 rounded shadow mb-6">
         <PhotoUploader />
+        <div class="mt-4 flex justify-end">
+             <button @click="onResetDb" class="text-sm text-red-500 hover:underline">Reset Database</button>
+        </div>
       </div>
 
       <!-- Step 2: Select Faces -->

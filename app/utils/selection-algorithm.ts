@@ -47,65 +47,77 @@ export async function selectGroupBalancedPhotos(
   const db = await getDB();
   const allPhotos = await db.getAllFromIndex('photos', 'by-session', sessionId);
 
+  // Score photos based on balance (how many target subjects are in them)
+  // Higher score = more target subjects
   const scoredPhotos = buildScoredPhotos(allPhotos, targetClusters);
-
-  // Sort by time
-  scoredPhotos.sort((a, b) => a.photo.timestamp - b.photo.timestamp);
 
   if (scoredPhotos.length === 0) return [];
 
-  // Separate matched and unmatched
   const matched = scoredPhotos.filter(p => p.matched);
-  const unmatched = scoredPhotos.filter(p => !p.matched);
+  
+  // If we have fewer matched photos than requested, return all of them
+  if (matched.length <= count) {
+    return matched.map(p => p.photo);
+  }
 
-  // Select from matched photos using time-bucketed balanced approach
-  const selected: Photo[] = [];
+  // Greedy selection for Group Balance:
+  // 1. Prioritize photos with the most target subjects (highest initial score)
+  // 2. Maintain a count of how many times each subject has been selected
+  // 3. Iteratively select photos that help balance the subject counts
+  
+  const selected: typeof scoredPhotos[0][] = [];
   const subjectCounts = new Map<string, number>();
   targetClusters.forEach(c => subjectCounts.set(c.id, 0));
 
-  if (matched.length > 0) {
-    const startTime = matched[0]!.photo.timestamp;
-    const endTime = matched[matched.length - 1]!.photo.timestamp;
-    const duration = endTime - startTime;
-    const interval = duration / count;
+  // Clone matched array to pick from
+  let pool = [...matched];
 
-    for (let i = 0; i < count; i++) {
-      const bucketStart = startTime + (i * interval);
-      const bucketEnd = bucketStart + interval;
+  for (let i = 0; i < count; i++) {
+    if (pool.length === 0) break;
 
-      const bucketPhotos = matched.filter(p =>
-        p.photo.timestamp >= bucketStart && p.photo.timestamp < bucketEnd
-      );
+    // Calculate dynamic score for each candidate in the pool
+    // Dynamic Score = Base Score (number of subjects) - Penalty (subjects already selected)
+    // We want to pick photos that contain subjects with LOW current counts.
+    
+    let bestCandidateIndex = -1;
+    let maxScore = -Infinity;
 
-      if (bucketPhotos.length === 0) continue;
+    for (let j = 0; j < pool.length; j++) {
+      const candidate = pool[j]!;
+      let score = 0;
+      
+      // Base score: +1 for each target subject in the photo
+      // Penalty: -1 * current_count for each subject
+      // This makes photos with "rare" subjects more valuable.
+      candidate.subjects.forEach(subId => {
+        score += 1; 
+        score -= (subjectCounts.get(subId) || 0);
+      });
 
-      let bestPhoto = bucketPhotos[0]!;
-      let bestScore = -Infinity;
-
-      for (const p of bucketPhotos) {
-        let score = 0;
-        p.subjects.forEach(subId => {
-          const cnt = subjectCounts.get(subId) || 0;
-          score -= cnt;
-        });
-
-        if (score > bestScore) {
-          bestScore = score;
-          bestPhoto = p;
-        }
+      if (score > maxScore) {
+        maxScore = score;
+        bestCandidateIndex = j;
       }
+    }
 
-      selected.push(bestPhoto.photo);
-      bestPhoto.subjects.forEach(subId => {
+    if (bestCandidateIndex !== -1) {
+      const best = pool[bestCandidateIndex]!;
+      selected.push(best);
+      
+      // Update subject counts
+      best.subjects.forEach(subId => {
         subjectCounts.set(subId, (subjectCounts.get(subId) || 0) + 1);
       });
+
+      // Remove from pool
+      pool.splice(bestCandidateIndex, 1);
     }
   }
 
-  // Append unmatched photos (no face detected / no match) so users can review them
-  const unmatchedPhotos = unmatched.map(p => p.photo);
+  // Sort selected photos by time for the album
+  selected.sort((a, b) => a.photo.timestamp - b.photo.timestamp);
 
-  return [...selected, ...unmatchedPhotos];
+  return selected.map(p => p.photo);
 }
 
 export async function selectGrowthPhotos(
@@ -137,8 +149,10 @@ export async function selectGrowthPhotos(
       const bucketStart = startTime + (i * interval);
       const bucketEnd = bucketStart + interval;
 
+      const isLastBucket = i === count - 1;
       const bucketPhotos = matched.filter(p =>
-        p.photo.timestamp >= bucketStart && p.photo.timestamp < bucketEnd
+        p.photo.timestamp >= bucketStart &&
+        (isLastBucket ? p.photo.timestamp <= bucketEnd : p.photo.timestamp < bucketEnd)
       );
 
       if (bucketPhotos.length > 0) {

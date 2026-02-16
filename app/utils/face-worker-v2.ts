@@ -2,7 +2,7 @@ import type * as FaceApi from 'face-api.js';
 
 // Environment configuration
 const MODELS_URL = '/models';
-const MIN_CONFIDENCE = 0.5;
+const MIN_CONFIDENCE = 0.2;
 
 let faceapi: typeof FaceApi;
 let isLoaded = false;

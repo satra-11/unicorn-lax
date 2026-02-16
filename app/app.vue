@@ -1,6 +1,6 @@
 <script setup lang="ts">
 useHead({
-  title: 'Photo Selection App',
+  title: 'Unicorn Lax',
   meta: [
     { name: 'viewport', content: 'width=device-width, initial-scale=1' }
   ],

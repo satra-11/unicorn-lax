@@ -75,7 +75,7 @@ const onResetDb = async () => {
 
 <template>
   <div class="min-h-screen bg-gray-50 flex flex-col items-center py-12">
-    <h1 class="text-4xl font-bold text-gray-800 mb-8">Photo Selector</h1>
+    <h1 class="text-4xl font-bold text-gray-800 mb-8">Unicorn Lax</h1>
 
     <div class="w-full max-w-4xl px-4">
       <!-- Step 1: Upload -->

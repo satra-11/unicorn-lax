@@ -53,7 +53,7 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
 
 <template>
   <div class="mt-8">
-    <h3 class="text-lg font-semibold mb-4">Detected People</h3>
+    <h3 class="text-lg font-semibold mb-4 text-black">Detected People</h3>
     <div v-if="isLoading" class="text-center py-4">Clustering faces...</div>
     <div v-else class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
       <div 
@@ -70,7 +70,7 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
         <div class="p-2 text-center text-xs font-medium truncate">
             {{ cluster.photoIds.length }} photos
         </div>
-        <div v-if="selectedClusters.has(cluster.id)" class="absolute top-1 right-1 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+        <div v-if="selectedClusters.has(cluster.id)" class="absolute top-1 right-1 bg-blue-500 text-black rounded-full w-5 h-5 flex items-center justify-center text-xs">
             ✓
         </div>
       </div>

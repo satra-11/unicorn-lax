@@ -116,8 +116,6 @@ export const usePhotoProcessor = () => {
                          bitmap = await createImageBitmap(file);
                     } catch (err) {
                         console.error('Failed to create bitmap for', file.name, err);
-                        // Try creating from blob explicitly if needed
-                        // or just skip this file
                     }
 
                     if (bitmap) {
@@ -165,6 +163,24 @@ export const usePhotoProcessor = () => {
                             cropBitmap?.close();
                         }
                     }
+                }
+
+                // Generate full-photo thumbnail for preview
+                try {
+                    const thumbBitmap = await createImageBitmap(file);
+                    const MAX_THUMB = 320;
+                    const scale = Math.min(MAX_THUMB / thumbBitmap.width, MAX_THUMB / thumbBitmap.height, 1);
+                    const tw = Math.round(thumbBitmap.width * scale);
+                    const th = Math.round(thumbBitmap.height * scale);
+                    const canvas = new OffscreenCanvas(tw, th);
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                        ctx.drawImage(thumbBitmap, 0, 0, tw, th);
+                        photo.thumbnail = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.7 });
+                    }
+                    thumbBitmap.close();
+                } catch (err) {
+                    console.warn('Failed to create photo thumbnail for', file.name, err);
                 }
 
                 await savePhoto(photo);

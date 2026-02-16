@@ -13,7 +13,9 @@ export interface Photo {
   // We avoid storing full Blob in DB alongside metadata to keep it fast, 
   // but might store thumbnail separately or just path if accessing via FileSystemHandle (in future).
   // For now, we assume we re-read file or store thumbnail.
-  thumbnail?: Blob; 
+  thumbnail?: Blob;
+  noFaceMatch?: boolean;
+  excluded?: boolean;
 }
 
 export interface ProcessingSession {

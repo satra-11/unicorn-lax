@@ -40,11 +40,12 @@ export async function clusterFaces(sessionId: string): Promise<FaceCluster[]> {
 
     // Compare with existing cluster centroids
     for (let i = 0; i < clusters.length; i++) {
+        const cluster = clusters[i]!;
         const distance = faceapi.euclideanDistance(
             Array.from(face.descriptor), 
-            Array.from(clusters[i].descriptor)
+            Array.from(cluster.descriptor)
         );
-        console.log(`[Cluster] Distance between face and cluster ${i} ("${clusters[i].label}"): ${distance.toFixed(4)}`);
+        console.log(`[Cluster] Distance between face and cluster ${i} ("${cluster.label}"): ${distance.toFixed(4)}`);
         if (distance < CLUSTER_THRESHOLD && distance < minDistance) {
             minDistance = distance;
             bestMatchIndex = i;
@@ -52,11 +53,10 @@ export async function clusterFaces(sessionId: string): Promise<FaceCluster[]> {
     }
 
     if (bestMatchIndex !== -1) {
-        // Add to existing cluster
-        clusters[bestMatchIndex].photoIds.push(face.photoId);
-         // Keep the best thumbnail? Or just first? 
-         if (!clusters[bestMatchIndex].thumbnail && face.thumbnail) {
-             clusters[bestMatchIndex].thumbnail = face.thumbnail;
+        const matched = clusters[bestMatchIndex]!;
+        matched.photoIds.push(face.photoId);
+         if (!matched.thumbnail && face.thumbnail) {
+             matched.thumbnail = face.thumbnail;
          }
     } else {
         // Create new cluster

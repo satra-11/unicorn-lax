@@ -69,6 +69,25 @@ export async function getSession(id: string) {
   return db.get('sessions', id);
 }
 
+export async function saveCluster(cluster: FaceCluster) {
+  const db = await getDB();
+  return db.put('clusters', cluster);
+}
+
+export async function getAllClusters(): Promise<FaceCluster[]> {
+  const db = await getDB();
+  return db.getAll('clusters');
+}
+
+export async function updateClusterLabel(id: string, label: string) {
+  const db = await getDB();
+  const cluster = await db.get('clusters', id);
+  if (cluster) {
+    cluster.label = label;
+    return db.put('clusters', cluster);
+  }
+}
+
 export async function clearExisitingData() {
   const db = await getDB();
   await db.clear('photos');

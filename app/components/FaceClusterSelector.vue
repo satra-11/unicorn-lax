@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, nextTick } from 'vue';
 import type { FaceCluster, ProcessingSession } from '~/utils/types';
 import { clusterFaces } from '~/utils/clustering';
-// import { saveSession } from '~/utils/db'; // Might update session with selected faces
+import { updateClusterLabel } from '~/utils/db';
 
 const props = defineProps<{
   session: ProcessingSession;
@@ -15,6 +15,9 @@ const emit = defineEmits<{
 const clusters = ref<FaceCluster[]>([]);
 const selectedClusters = ref<Set<string>>(new Set());
 const isLoading = ref(false);
+const editingClusterId = ref<string | null>(null);
+const editingLabel = ref('');
+const editInputRef = ref<HTMLInputElement | null>(null);
 
 const loadClusters = async () => {
     if (!props.session) return;
@@ -43,6 +46,31 @@ const toggleSelection = (cluster: FaceCluster) => {
     emit('select', selected);
 };
 
+const startEditing = async (cluster: FaceCluster) => {
+    editingClusterId.value = cluster.id;
+    editingLabel.value = cluster.label;
+    await nextTick();
+    editInputRef.value?.focus();
+    editInputRef.value?.select();
+};
+
+const commitLabel = async (cluster: FaceCluster) => {
+    const trimmed = editingLabel.value.trim();
+    const newLabel = trimmed || cluster.label;
+
+    // Update in local ref
+    const target = clusters.value.find(c => c.id === cluster.id);
+    if (target) {
+        target.label = newLabel;
+    }
+
+    // Persist to DB
+    await updateClusterLabel(cluster.id, newLabel);
+
+    editingClusterId.value = null;
+    editingLabel.value = '';
+};
+
 const getThumbnailUrl = (cluster: FaceCluster) => {
     if (cluster.thumbnail) {
         return URL.createObjectURL(cluster.thumbnail);
@@ -67,8 +95,29 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
             <img v-if="cluster.thumbnail" :src="getThumbnailUrl(cluster)" class="w-full h-full object-cover" />
             <span v-else class="text-gray-400 text-xs">No Img</span>
         </div>
-        <div class="p-2 text-center text-xs font-medium truncate">
-            {{ cluster.photoIds.length }} photos
+        <div class="p-2 text-center">
+            <!-- Inline label editing -->
+            <div
+              v-if="editingClusterId === cluster.id"
+              @click.stop
+            >
+              <input
+                ref="editInputRef"
+                v-model="editingLabel"
+                class="w-full text-xs font-medium text-center border border-blue-400 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                @keydown.enter="commitLabel(cluster)"
+                @blur="commitLabel(cluster)"
+              />
+            </div>
+            <div
+              v-else
+              class="flex items-center justify-center gap-1 group"
+              @click.stop="startEditing(cluster)"
+            >
+              <span class="text-xs font-medium truncate">{{ cluster.label }}</span>
+              <span class="text-gray-400 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">✏️</span>
+            </div>
+            <div class="text-[10px] text-gray-400 mt-0.5">{{ cluster.photoIds.length }} photos</div>
         </div>
         <div v-if="selectedClusters.has(cluster.id)" class="absolute top-1 right-1 bg-blue-500 text-black rounded-full w-5 h-5 flex items-center justify-center text-xs">
             ✓
@@ -77,3 +126,4 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
     </div>
   </div>
 </template>
+

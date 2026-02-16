@@ -83,6 +83,11 @@ const startEditing = async (cluster: FaceCluster) => {
     editInputRef.value?.select();
 };
 
+const handleEnter = (e: KeyboardEvent) => {
+    if (e.isComposing) return;
+    (e.target as HTMLInputElement).blur();
+};
+
 const commitLabel = async (cluster: FaceCluster) => {
     const trimmed = editingLabel.value.trim();
     const newLabel = trimmed || cluster.label;
@@ -143,7 +148,7 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
                     ref="editInputRef"
                     v-model="editingLabel"
                     class="w-full text-xs font-medium text-center border border-blue-400 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    @keydown.enter="commitLabel(cluster)"
+                    @keydown.enter="handleEnter"
                     @blur="commitLabel(cluster)"
                   />
                 </div>

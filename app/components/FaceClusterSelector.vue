@@ -4,7 +4,7 @@ import type { FaceCluster, ProcessingSession } from '~/utils/types';
 import { clusterFaces, getUnrecognizedPhotos } from '~/utils/clustering';
 import { updateClusterLabel } from '~/utils/db';
 import FaceClusterSettings from '~/components/FaceClusterSettings.vue';
-import GlobalSettingsModal from '~/components/GlobalSettingsModal.vue';
+
 
 const props = defineProps<{
   session: ProcessingSession;
@@ -26,7 +26,7 @@ const showSettings = ref(false);
 const settingsCluster = ref<FaceCluster | null>(null);
 
 // Global Settings Modal State
-const showGlobalSettings = ref(false);
+
 
     
     // Import the new function - we need to update imports first, but let's do logic here
@@ -128,19 +128,7 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
 
 <template>
   <div class="mt-8">
-    <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-semibold text-black">検出された人物</h3>
-        <button 
-            @click="showGlobalSettings = true"
-            class="text-gray-500 hover:text-blue-600 p-2 rounded-full hover:bg-gray-100 transition-colors"
-            title="設定 (Settings)"
-        >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-        </button>
-    </div>
+    <h3 class="text-lg font-semibold text-black mb-4">検出された人物</h3>
 
     <div v-if="isLoading" class="text-center py-4">顔を分類中...</div>
     <div v-else class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
@@ -212,11 +200,7 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
         @close="showSettings = false"
         @update="handleSettingsUpdate"
     />
-    <!-- Global Settings Modal -->
-    <GlobalSettingsModal
-        :is-open="showGlobalSettings"
-        @close="showGlobalSettings = false"
-    />
+
   </div>
 </template>
 

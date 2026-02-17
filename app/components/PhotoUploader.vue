@@ -42,8 +42,7 @@ const onFolderSelect = async (event: Event) => {
             />
             <span class="model-card-badge unicorn-badge">推奨</span>
             <div class="model-card-icon">🦄</div>
-            <div class="model-card-name">Unicorn</div>
-            <div class="model-card-label">高精度モード</div>
+            <div class="model-card-name">Unicornモード</div>
             <div class="model-card-desc">精度を重視し、<br />ほとんどの写真に対応</div>
           </label>
 
@@ -61,8 +60,7 @@ const onFolderSelect = async (event: Event) => {
               @change="setFaceModel('tiny')"
             />
             <div class="model-card-icon">🐇</div>
-            <div class="model-card-name">Rabbit</div>
-            <div class="model-card-label">高速モード</div>
+            <div class="model-card-name">Rabbitモード</div>
             <div class="model-card-desc">スピード重視、<br />精度はやや控えめ</div>
           </label>
         </div>

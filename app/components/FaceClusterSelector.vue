@@ -11,6 +11,26 @@ import { updateClusterLabel } from '~/utils/db'
 import FaceClusterSettings from '~/components/FaceClusterSettings.vue'
 import MergeSuggestionModal from '~/components/MergeSuggestionModal.vue'
 
+// Persist dismissed merge pair keys in localStorage so they survive page reloads
+const DISMISSED_MERGE_PAIRS_KEY = 'dismissed-merge-pairs'
+
+const loadDismissedPairs = (): Set<string> => {
+  try {
+    const raw = localStorage.getItem(DISMISSED_MERGE_PAIRS_KEY)
+    return raw ? new Set(JSON.parse(raw) as string[]) : new Set()
+  } catch {
+    return new Set()
+  }
+}
+
+const saveDismissedPair = (key: string) => {
+  const set = loadDismissedPairs()
+  set.add(key)
+  localStorage.setItem(DISMISSED_MERGE_PAIRS_KEY, JSON.stringify([...set]))
+}
+
+const makePairKey = (idA: string, idB: string) => [idA, idB].sort().join(':')
+
 const props = defineProps<{
   session: ProcessingSession
   singleSelection?: boolean
@@ -33,11 +53,7 @@ const settingsCluster = ref<FaceCluster | null>(null)
 // Merge Suggestion State
 const similarPairs = ref<SimilarClusterPair[]>([])
 const showMergeSuggestion = ref(false)
-const mergeSuggestionChecked = ref(false)
 
-// Global Settings Modal State
-
-// Import the new function - we need to update imports first, but let's do logic here
 const loadClusters = async () => {
   if (!props.session) return
   isLoading.value = true
@@ -47,30 +63,17 @@ const loadClusters = async () => {
       getUnrecognizedPhotos(props.session.id),
     ])
 
-    // Add unrecognized cluster if there are any photos
     if (unrecognizedPhotos.length > 0) {
       const unrecognizedCluster: FaceCluster = {
         id: 'unrecognized',
         label: '未検出 (Unrecognized)',
-        descriptor: new Float32Array(0), // Dummy
+        descriptor: new Float32Array(0),
         photoIds: unrecognizedPhotos.map((p) => p.id),
-        // Use the first photo as thumbnail if available, otherwise it's fine
         thumbnail: unrecognizedPhotos[0]?.thumbnail,
       }
-      // Append to end
       clusters.value = [...detectedClusters, unrecognizedCluster]
     } else {
       clusters.value = detectedClusters
-    }
-
-    // Check for similar clusters only on the first load (not after merge/settings update)
-    if (!mergeSuggestionChecked.value) {
-      mergeSuggestionChecked.value = true
-      const pairs = findSimilarClusterPairs(clusters.value)
-      if (pairs.length > 0) {
-        similarPairs.value = pairs
-        showMergeSuggestion.value = true
-      }
     }
   } catch (e) {
     console.error('Clustering failed', e)
@@ -79,23 +82,39 @@ const loadClusters = async () => {
   }
 }
 
-const handleSettingsUpdate = async () => {
-  await loadClusters() // Reload data
-  showSettings.value = false // Close modal
+const checkMergeSuggestions = () => {
+  const dismissed = loadDismissedPairs()
+  const allPairs = findSimilarClusterPairs(clusters.value)
+  const newPairs = allPairs.filter((p) => !dismissed.has(makePairKey(p.clusterA.id, p.clusterB.id)))
+  if (newPairs.length > 0) {
+    similarPairs.value = newPairs
+    showMergeSuggestion.value = true
+  }
 }
 
-const handleMergeDone = async () => {
+const handleSettingsUpdate = async () => {
+  await loadClusters()
+  showSettings.value = false
+}
+
+const handleMergeDone = async (dismissed: Array<{ idA: string; idB: string }>) => {
   showMergeSuggestion.value = false
   similarPairs.value = []
+  for (const d of dismissed) {
+    saveDismissedPair(makePairKey(d.idA, d.idB))
+  }
   await loadClusters()
 }
 
-onMounted(loadClusters)
+onMounted(async () => {
+  await loadClusters()
+  checkMergeSuggestions()
+})
 watch(
   () => props.session,
-  () => {
-    mergeSuggestionChecked.value = false
-    loadClusters()
+  async () => {
+    await loadClusters()
+    checkMergeSuggestions()
   },
 )
 

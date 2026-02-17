@@ -349,7 +349,7 @@ export async function movePhotoToCluster(
 
 // Threshold for suggesting a merge. Pairs with distance between
 // CLUSTER_THRESHOLD and this value are considered "similar enough to ask".
-export const MERGE_SUGGESTION_THRESHOLD = 0.48
+export const MERGE_SUGGESTION_THRESHOLD = 0.44
 
 export interface SimilarClusterPair {
   clusterA: FaceCluster
@@ -402,10 +402,7 @@ export function findSimilarClusterPairs(clusters: FaceCluster[]): SimilarCluster
  * - Label preference: user-given name over auto-generated "Person X"
  * - The "remove" cluster is deleted from DB
  */
-export async function mergeClusters(
-  keepClusterId: string,
-  removeClusterId: string,
-): Promise<void> {
+export async function mergeClusters(keepClusterId: string, removeClusterId: string): Promise<void> {
   const clusters = await getAllClusters()
   const keep = clusters.find((c) => c.id === keepClusterId)
   const remove = clusters.find((c) => c.id === removeClusterId)

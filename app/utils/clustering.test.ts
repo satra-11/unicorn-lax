@@ -110,7 +110,7 @@ describe('clustering', () => {
 
   describe('findSimilarClusterPairs', () => {
     it('should find pairs within the suggestion range', () => {
-      vi.mocked(faceapi.euclideanDistance).mockReturnValue(0.45) // Between 0.4 and 0.55
+      vi.mocked(faceapi.euclideanDistance).mockReturnValue(0.42) // Between 0.4 and 0.44
 
       const clusterA: FaceCluster = {
         id: 'a',
@@ -132,11 +132,11 @@ describe('clustering', () => {
       expect(pairs).toHaveLength(1)
       expect(pairs[0]!.clusterA.id).toBe('a')
       expect(pairs[0]!.clusterB.id).toBe('b')
-      expect(pairs[0]!.distance).toBe(0.45)
+      expect(pairs[0]!.distance).toBe(0.42)
     })
 
     it('should not include pairs outside the suggestion range', () => {
-      vi.mocked(faceapi.euclideanDistance).mockReturnValue(0.7) // Above 0.55
+      vi.mocked(faceapi.euclideanDistance).mockReturnValue(0.7) // Above 0.44
 
       const clusterA: FaceCluster = {
         id: 'a',
@@ -156,7 +156,7 @@ describe('clustering', () => {
     })
 
     it('should exclude unrecognized and empty clusters', () => {
-      vi.mocked(faceapi.euclideanDistance).mockReturnValue(0.45)
+      vi.mocked(faceapi.euclideanDistance).mockReturnValue(0.42)
 
       const clusterA: FaceCluster = {
         id: 'unrecognized',
@@ -183,9 +183,9 @@ describe('clustering', () => {
 
     it('should sort pairs by distance ascending', () => {
       vi.mocked(faceapi.euclideanDistance)
-        .mockReturnValueOnce(0.50)
+        .mockReturnValueOnce(0.43)
+        .mockReturnValueOnce(0.41)
         .mockReturnValueOnce(0.42)
-        .mockReturnValueOnce(0.48)
 
       const clusters: FaceCluster[] = [
         { id: 'a', label: 'P1', descriptor: new Float32Array([0.1]), photoIds: ['p1'] },
@@ -196,9 +196,9 @@ describe('clustering', () => {
       const pairs = findSimilarClusterPairs(clusters)
 
       expect(pairs).toHaveLength(3)
-      expect(pairs[0]!.distance).toBe(0.42)
-      expect(pairs[1]!.distance).toBe(0.48)
-      expect(pairs[2]!.distance).toBe(0.50)
+      expect(pairs[0]!.distance).toBe(0.41)
+      expect(pairs[1]!.distance).toBe(0.42)
+      expect(pairs[2]!.distance).toBe(0.43)
     })
   })
 

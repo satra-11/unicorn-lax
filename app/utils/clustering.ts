@@ -18,37 +18,25 @@ export async function clusterFaces(sessionId: string): Promise<FaceCluster[]> {
   // 2. Identify all photo IDs in the current session
   const sessionPhotoIds = new Set(photos.map((p) => p.id))
 
-  // 3. "Clean" existing clusters by removing photos from the current session
-  //    This allows us to re-cluster them potentially into different groups if thresholds changed.
-  //    However, we MUST keep "confirmed" photos if they are in this session?
-  //    Actually, if a photo is "confirmed" in a cluster, it should probably stay there unless we are doing a full re-calc.
-  //    For now, let's assume `clusterFaces` is run when opening the page or when requested,
-  //    and it should primarily group *unassigned* faces or re-group if settings changed.
-  //    If we want to respect "confirmed" faces, we should skip clustering for them.
+  // 3. Build a set of ALL photo IDs already assigned to a cluster.
+  //    We do NOT re-cluster photos that are already in a cluster — this preserves
+  //    user feedback and prevents regression where centroids shift causes
+  //    previously-matched photos to split into new groups.
+  //    Only truly new (unassigned) photos will be clustered.
 
-  //    Let's refine:
-  //    - If a photo has been "confirmed" manually by user into Cluster A, we should NOT move it.
-  //    - If it was just auto-assigned, we can re-assign it.
-
-  //    So, for each existing cluster:
-  //      - Keep `photoIds` that are NOT in current session.
-  //      - Keep `photoIds` that ARE in current session BUT are also in `confirmedPhotoIds`.
-  //      - Remove `photoIds` that are in current session AND NOT confirmed.
-
-  for (const cluster of clusters) {
-    const confirmed = new Set(cluster.confirmedPhotoIds || [])
-    cluster.photoIds = cluster.photoIds.filter((pid) => {
-      // Keep if NOT in current session
-      if (!sessionPhotoIds.has(pid)) return true
-      // Keep if in current session AND confirmed
-      if (confirmed.has(pid)) return true
-      // Drop otherwise (it will be re-processed below)
-      return false
-    })
+  const allAssignedPhotoIds = new Set<string>()
+  for (const c of clusters) {
+    for (const pid of c.photoIds) {
+      allAssignedPhotoIds.add(pid)
+    }
+    if (c.confirmedPhotoIds) {
+      for (const pid of c.confirmedPhotoIds) {
+        allAssignedPhotoIds.add(pid)
+      }
+    }
   }
 
-  // Extract faces from photos in this session
-  // We only want to cluster faces that are NOT already confirmed in some cluster.
+  // Extract faces from photos in this session that are NOT already assigned to any cluster
   const facesToCluster: {
     descriptor: Float32Array
     photoId: string
@@ -56,16 +44,8 @@ export async function clusterFaces(sessionId: string): Promise<FaceCluster[]> {
     thumbnail?: Blob
   }[] = []
 
-  // Build a set of confirmed photo IDs across ALL clusters to skip them
-  const allConfirmedPhotoIds = new Set<string>()
-  for (const c of clusters) {
-    if (c.confirmedPhotoIds) {
-      c.confirmedPhotoIds.forEach((id) => allConfirmedPhotoIds.add(id))
-    }
-  }
-
   for (const photo of photos) {
-    if (allConfirmedPhotoIds.has(photo.id)) continue // Skip confirmed photos
+    if (allAssignedPhotoIds.has(photo.id)) continue // Skip already-assigned photos
 
     if (photo.faces) {
       for (const face of photo.faces) {
@@ -84,7 +64,10 @@ export async function clusterFaces(sessionId: string): Promise<FaceCluster[]> {
     }
   }
 
-  console.log(`[Cluster] Processing ${facesToCluster.length} faces (excluding confirmed).`)
+  const trainedClusters = clusters.filter((c) => !/^Person \d+$/.test(c.label))
+  console.log(
+    `[Cluster] Processing ${facesToCluster.length} faces against ${clusters.length} clusters (${trainedClusters.length} user-trained).`,
+  )
 
   // 4. Match faces against clusters
   for (const face of facesToCluster) {
@@ -117,10 +100,18 @@ export async function clusterFaces(sessionId: string): Promise<FaceCluster[]> {
         matched.thumbnail = face.thumbnail
       }
     } else {
-      // Create new cluster
-      // Try to verify if this is actually a known person from OTHER sessions (already in clusters list)
-      // But we already checked all clusters in the loop above.
-      // So this is definitely a new face group *for the current constraints*.
+      // Log distances to trained clusters when no match found
+      if (trainedClusters.length > 0) {
+        const distances = trainedClusters.map((c) => ({
+          label: c.label,
+          distance: faceapi.euclideanDistance(
+            Array.from(face.descriptor),
+            Array.from(c.descriptor),
+          ).toFixed(3),
+          threshold: (c.config?.similarityThreshold ?? CLUSTER_THRESHOLD).toFixed(2),
+        }))
+        console.log(`[Cluster] No match for face in photo ${face.photoId}:`, distances)
+      }
 
       const newCluster: FaceCluster = {
         id: crypto.randomUUID(),
@@ -142,10 +133,16 @@ export async function clusterFaces(sessionId: string): Promise<FaceCluster[]> {
     await saveCluster(cluster)
   }
 
-  // Return only clusters that have at least one photo from THIS session
-  // (to display in the UI for this session)
-  const relevantClusters = clusters.filter((c) =>
-    c.photoIds.some((pid) => sessionPhotoIds.has(pid)),
+  // Return clusters that are relevant to show in the UI:
+  // 1. Clusters with at least one photo from THIS session (auto-matched or manually assigned)
+  // 2. User-trained clusters (custom-named, non-default label) — shown even with 0 photos
+  //    so users can manually move photos into them after re-upload
+  const isUserTrained = (c: FaceCluster) =>
+    c.label && !/^Person \d+$/.test(c.label)
+
+  const relevantClusters = clusters.filter(
+    (c) =>
+      c.photoIds.some((pid) => sessionPhotoIds.has(pid)) || isUserTrained(c),
   )
 
   return relevantClusters
@@ -186,45 +183,85 @@ export async function recalculateClusterCentroid(clusterId: string): Promise<voi
 
   if (targetPhotoIds.length === 0) return
 
-  // We need to perform the recalculation.
-  // 1. Get DB
-  // 2. Fetch all target photos
-  // 3. Find the matching face in each photo (closest to current cluster descriptor)
-  // 4. Average the descriptors
 
-  const allDescriptors: Float32Array[] = []
+  // Use cluster-specific threshold (Fix: was using hardcoded CLUSTER_THRESHOLD)
+  const threshold = cluster.config?.similarityThreshold ?? CLUSTER_THRESHOLD
 
-  // We need to fetch photos. Since we don't have a direct `getPhoto` imported yet,
-  // let's rely on standard logic or add it.
-  // For now, to make progress, I will assume we can fetch them.
-  // Since `photoIds` are unique, we might need a `getPhoto` in `db.ts`.
-  // I will add `getPhoto` to `db.ts` in the next step.
+  // Fetch all target photos and their face descriptors
+  const photoFaces: { photoId: string; descriptors: Float32Array[] }[] = []
 
   for (const photoId of targetPhotoIds) {
-    // @ts-ignore - verify existence in db.ts later
     const photo = (await db.get('photos', photoId)) as Photo | undefined
 
     if (photo && photo.faces) {
-      // Find the face that matches this cluster
-      let bestFaceDesc: Float32Array | null = null
-      let bestDist = Infinity
+      const descriptors = photo.faces.map((face) =>
+        face.descriptor instanceof Float32Array
+          ? face.descriptor
+          : new Float32Array(face.descriptor),
+      )
+      photoFaces.push({ photoId, descriptors })
+    }
+  }
 
-      for (const face of photo.faces) {
-        const desc =
-          face.descriptor instanceof Float32Array
-            ? face.descriptor
-            : new Float32Array(face.descriptor)
+  // Two-pass approach to avoid circular centroid reference:
+  // Pass 1: Collect descriptors from single-face photos (unambiguous)
+  //         to build a reliable preliminary centroid.
+  // Pass 2: Use the preliminary centroid to pick the correct face
+  //         from multi-face photos.
 
-        const dist = faceapi.euclideanDistance(desc, cluster.descriptor)
-        if (dist < CLUSTER_THRESHOLD && dist < bestDist) {
-          bestDist = dist
-          bestFaceDesc = desc
-        }
+  const singleFaceDescriptors: Float32Array[] = []
+  const multiFacePhotos: { photoId: string; descriptors: Float32Array[] }[] = []
+
+  for (const pf of photoFaces) {
+    if (pf.descriptors.length === 1 && pf.descriptors[0]) {
+      singleFaceDescriptors.push(pf.descriptors[0])
+    } else if (pf.descriptors.length > 1) {
+      multiFacePhotos.push(pf)
+    }
+  }
+
+  // Build preliminary centroid from single-face photos
+  let preliminaryCentroid: Float32Array | null = null
+
+  if (singleFaceDescriptors.length > 0) {
+    const firstDesc = singleFaceDescriptors[0]!
+    const numDims = firstDesc.length
+    const mean = new Float32Array(numDims)
+    for (const desc of singleFaceDescriptors) {
+      for (let i = 0; i < numDims; i++) {
+        mean[i] = (mean[i] ?? 0) + (desc[i] ?? 0)
       }
+    }
+    for (let i = 0; i < numDims; i++) {
+      mean[i] = (mean[i] ?? 0) / singleFaceDescriptors.length
+    }
+    preliminaryCentroid = mean
+  }
 
-      if (bestFaceDesc) {
-        allDescriptors.push(bestFaceDesc)
+  // The reference centroid for multi-face disambiguation:
+  // prefer preliminary centroid from single-face photos, fall back to current cluster descriptor
+  const referenceCentroid = preliminaryCentroid ?? cluster.descriptor
+
+  // Pass 2: Pick best face from multi-face photos using the reference centroid
+  const allDescriptors: Float32Array[] = [...singleFaceDescriptors]
+
+  for (const pf of multiFacePhotos) {
+    let bestFaceDesc: Float32Array | null = null
+    let bestDist = Infinity
+
+    for (const desc of pf.descriptors) {
+      const dist = faceapi.euclideanDistance(
+        Array.from(desc),
+        Array.from(referenceCentroid),
+      )
+      if (dist < threshold && dist < bestDist) {
+        bestDist = dist
+        bestFaceDesc = desc
       }
+    }
+
+    if (bestFaceDesc) {
+      allDescriptors.push(bestFaceDesc)
     }
   }
 

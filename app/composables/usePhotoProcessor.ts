@@ -163,23 +163,20 @@ export const usePhotoProcessor = () => {
     for (let i = 0; i < fileArray.length; i += BATCH_SIZE) {
       const batch = fileArray.slice(i, i + BATCH_SIZE)
       await Promise.all(
-        batch.map(async (file) => {
+         batch.map(async (file) => {
           try {
-            const meta = await extractMetadata(file) // This might consume the file stream?
             const hash = await calculateHash(file)
 
-            // 1. Check if we already processed this hash IN THIS SESSION (e.g. user selected same file twice OR already in session)
+            // 1. Atomically check and register hash to prevent race conditions
+            //    within the same batch (Promise.all processes files in parallel)
             if (processedHashesInSession.has(hash)) {
               console.log('Skipping duplicate photo in current session:', file.name)
-              // If we are appending, we might be counting a "new" file that is actually a duplicate.
-              // If we skip it, we should probably NOT increment session.processedCount?
-              // Actually, totalFiles was incremented by fileArray.length.
-              // If we skip, we still need to "account" for this file in the progress bar or reduce total?
-              // Let's just treat it as "processed" (skipped) and increment progress so bar completes.
               progress.value++
               return
             }
             processedHashesInSession.add(hash)
+
+            const meta = await extractMetadata(file)
 
             // 2. Check for duplicates in DB
             const existing = await getPhotoByHash(hash)

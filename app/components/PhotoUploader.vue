@@ -5,8 +5,16 @@ const props = defineProps<{
   currentSessionId?: string
 }>()
 
-const { processFiles, isProcessing, progress, total, currentSession, faceModel, setFaceModel, processingStatus } =
-  usePhotoProcessor()
+const {
+  processFiles,
+  isProcessing,
+  progress,
+  total,
+  currentSession,
+  faceModel,
+  setFaceModel,
+  processingStatus,
+} = usePhotoProcessor()
 
 const onFolderSelect = async (event: Event) => {
   const input = event.target as HTMLInputElement
@@ -96,9 +104,7 @@ const onFolderSelect = async (event: Event) => {
       <p v-if="processingStatus" class="text-sm text-blue-600 text-center mt-2 animate-pulse">
         {{ processingStatus }}
       </p>
-      <p v-else-if="progress === 0" class="text-sm text-gray-500 text-center mt-2">
-        準備中...
-      </p>
+      <p v-else-if="progress === 0" class="text-sm text-gray-500 text-center mt-2">準備中...</p>
     </div>
   </div>
 </template>

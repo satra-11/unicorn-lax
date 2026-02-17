@@ -213,9 +213,13 @@ onBeforeUnmount(() => {
             思い出選びは、AIで<span class="font-bold text-gray-800">「楽（Lax）」</span>する。<br />
             プライバシー重視。すべての処理はブラウザ内で完結します。
           </p>
-          <div class="inline-flex items-center gap-2 mb-4 px-4 py-1.5 bg-amber-50 border border-amber-200 rounded-full">
+          <div
+            class="inline-flex items-center gap-2 mb-4 px-4 py-1.5 bg-amber-50 border border-amber-200 rounded-full"
+          >
             <span class="relative flex h-2.5 w-2.5">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+              <span
+                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"
+              />
               <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500" />
             </span>
             <span class="text-sm font-semibold text-amber-700">β版 — 現在開発中です</span>

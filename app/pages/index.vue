@@ -2,7 +2,8 @@
 import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue'
 import { usePhotoProcessor } from '~/composables/usePhotoProcessor'
 import FaceClusterSelector from '~/components/FaceClusterSelector.vue'
-import AlbumPreview from '~/components/AlbumPreview.vue'
+
+import StepIndicator from '~/components/StepIndicator.vue'
 import type { FaceCluster, Photo } from '~/utils/types'
 import { selectGroupBalancedPhotos, selectGrowthPhotos } from '~/utils/selection-algorithm'
 import {
@@ -14,13 +15,33 @@ import {
 } from '~/utils/db'
 
 const { isProcessing, progress: _progress, total: _total, currentSession } = usePhotoProcessor()
-const step = ref<'upload' | 'select-faces' | 'review' | 'confirmed'>('upload')
+const step = ref<'upload' | 'step1' | 'step2' | 'step3'>('upload')
 const selectedClusters = ref<FaceCluster[]>([])
 const generatedPhotos = ref<Photo[]>([])
 const mode = ref<'group' | 'growth'>('group')
 const targetCount = ref(10)
 const isSelecting = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
+const isConfirmed = ref(false)
+
+const stepDefs = [
+  { label: 'ステップ1', description: '写真の分類' },
+  { label: 'ステップ2', description: 'モード選択 & 枚数決定' },
+  { label: 'ステップ3', description: '完成' },
+]
+
+const currentStepNumber = computed<1 | 2 | 3>(() => {
+  if (step.value === 'step1') return 1
+  if (step.value === 'step2') return 2
+  return 3
+})
+
+const completedStepNumber = computed<0 | 1 | 2 | 3>(() => {
+  if (isConfirmed.value) return 3
+  if (step.value === 'step3') return 2
+  if (step.value === 'step2') return 1
+  return 0
+})
 
 // Prevent accidental tab close
 const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -35,7 +56,7 @@ onMounted(async () => {
     if (lastSession && lastSession.status === 'completed') {
       console.log('Restoring last session:', lastSession.id)
       currentSession.value = lastSession
-      step.value = 'select-faces'
+      step.value = 'step1'
     }
   } catch (e) {
     console.error('Failed to restore session:', e)
@@ -50,7 +71,7 @@ watch(
   () => currentSession.value?.status,
   (newStatus) => {
     if (newStatus === 'completed') {
-      step.value = 'select-faces'
+      step.value = 'step1'
     }
   },
 )
@@ -78,7 +99,8 @@ const generateAlbum = async () => {
         )
       }
     }
-    step.value = 'review'
+    isConfirmed.value = true
+    step.value = 'step3'
   } catch (e) {
     console.error('Selection failed', e)
   } finally {
@@ -86,14 +108,23 @@ const generateAlbum = async () => {
   }
 }
 
-const onPhotosUpdated = (photos: Photo[]) => {
-  generatedPhotos.value = photos
-}
 
 const confirmedPhotos = computed(() => generatedPhotos.value.filter((p) => !p.excluded))
 
-const confirmSelection = () => {
-  step.value = 'confirmed'
+
+const goToStep2 = () => {
+  step.value = 'step2'
+}
+
+const goBackToStep1 = () => {
+  generatedPhotos.value = []
+  isConfirmed.value = false
+  step.value = 'step1'
+}
+
+const goBackToStep2 = () => {
+  isConfirmed.value = false
+  step.value = 'step2'
 }
 
 const onResetDb = async () => {
@@ -158,10 +189,10 @@ const onImportFile = async (event: Event) => {
       alert('インポートに失敗しました。ファイル形式を確認してください。')
     }
   }
-  reader.readAsText(file) // Read as text for JSON parsing
+  reader.readAsText(file)
 }
 
-// Thumbnail handling for confirmed step
+// Thumbnail handling for step3
 const blobUrls = ref(new Map<string, string>())
 
 const getThumbnailUrl = (photo: Photo): string => {
@@ -173,9 +204,8 @@ const getThumbnailUrl = (photo: Photo): string => {
   return url
 }
 
-// Clean up blob URLs when component unmounts or when leaving confirmed step
 watch(step, (newStep) => {
-  if (newStep !== 'confirmed') {
+  if (newStep !== 'step3') {
     for (const url of blobUrls.value.values()) {
       URL.revokeObjectURL(url)
     }
@@ -252,7 +282,7 @@ onBeforeUnmount(() => {
               </div>
               <button
                 class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold shadow-lg shadow-blue-200 transition-all transform hover:-translate-y-0.5"
-                @click="step = 'select-faces'"
+                @click="step = 'step1'"
               >
                 選定をはじめる →
               </button>
@@ -309,7 +339,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <!-- Step 1: Processing State (Hidden in LP view mostly, but kept for logic) -->
+      <!-- Processing State -->
       <div
         v-else-if="step === 'upload' || isProcessing || currentSession?.status === 'processing'"
         class="bg-white p-8 rounded-2xl shadow-lg mb-6 max-w-2xl mx-auto"
@@ -317,119 +347,167 @@ onBeforeUnmount(() => {
         <PhotoUploader :current-session-id="currentSession?.id" />
       </div>
 
-      <!-- Step 2: Select Faces -->
-      <div
-        v-if="step === 'select-faces' && currentSession"
-        class="bg-white p-6 rounded shadow mb-6"
-      >
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-bold text-black">対象の人物を選択</h2>
-          <button class="text-sm text-blue-600 hover:underline" @click="step = 'upload'">
-            ← 写真を追加 / アップロード画面へ
-          </button>
-        </div>
-
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700">モード選択</label>
-          <select
-            v-model="mode"
-            class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-          >
-            <option value="group">グループバランス (複数人のバランス重視)</option>
-            <option value="growth">成長記録 (特定の1人の時系列)</option>
-          </select>
-        </div>
-
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700">選定枚数 (目標)</label>
-          <input
-            v-model.number="targetCount"
-            type="number"
-            class="mt-1 block w-full pl-3 pr-10 py-2 border-gray-300 rounded-md"
-          />
-        </div>
-
-        <p class="mb-4 text-gray-600 text-black">アルバムに入れたい人物を選択してください。</p>
-
-        <FaceClusterSelector
-          :session="currentSession"
-          :single-selection="mode === 'growth'"
-          @select="onFacesSelected"
+      <!-- === Step Flow (step1 / step2 / step3) === -->
+      <template v-if="step === 'step1' || step === 'step2' || step === 'step3'">
+        <!-- Step Indicator -->
+        <StepIndicator
+          :current-step="currentStepNumber"
+          :completed-step="completedStepNumber"
+          :steps="stepDefs"
         />
 
-        <div class="mt-6 flex justify-end">
-          <button
-            :disabled="selectedClusters.length === 0 || isSelecting"
-            class="px-6 py-2 bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
-            @click="generateAlbum"
-          >
-            {{ isSelecting ? '生成中...' : 'アルバム候補を生成' }}
-          </button>
-        </div>
-      </div>
+        <!-- Step 1: 写真の分類 -->
+        <div v-if="step === 'step1' && currentSession" class="bg-white p-6 rounded-xl shadow-md mb-6">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-gray-900">写真の分類</h2>
+            <button class="text-sm text-blue-600 hover:underline" @click="step = 'upload'">
+              ← 写真を追加 / アップロード画面へ
+            </button>
+          </div>
+          <p class="mb-4 text-gray-600">
+            AIが検出した人物グループを確認し、必要に応じて写真を正しいグループに移動してください。
+          </p>
 
-      <!-- Step 3: Review -->
-      <div v-if="step === 'review'" class="bg-white p-6 rounded shadow mb-6">
-        <h2 class="text-xl font-bold mb-2">写真の確認・調整</h2>
-        <p class="mb-4 text-sm text-gray-500">
-          クリックして除外/追加を切り替えられます。顔が検出されなかった写真も下に表示されています。
-        </p>
+          <FaceClusterSelector
+            :session="currentSession"
+            hide-selection
+          />
 
-        <AlbumPreview :photos="generatedPhotos" @update:photos="onPhotosUpdated" />
-
-        <div class="mt-6 flex justify-between items-center">
-          <button
-            class="px-4 py-2 border rounded text-gray-700 hover:bg-gray-50"
-            @click="step = 'select-faces'"
-          >
-            戻る
-          </button>
-          <button
-            class="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-            @click="confirmSelection"
-          >
-            選択を確定する ({{ confirmedPhotos.length }} 枚)
-          </button>
-        </div>
-      </div>
-
-      <!-- Step 4: Confirmed -->
-      <div v-if="step === 'confirmed'" class="bg-white p-6 rounded shadow mb-6">
-        <h2 class="text-xl font-bold mb-2">選定完了</h2>
-        <p class="mb-4 text-gray-600">{{ confirmedPhotos.length }} 枚の写真を確定しました。</p>
-
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-          <div
-            v-for="photo in confirmedPhotos"
-            :key="photo.id"
-            class="border rounded-lg overflow-hidden"
-          >
-            <div class="aspect-video bg-gray-100 flex items-center justify-center overflow-hidden">
-              <img
-                v-if="getThumbnailUrl(photo)"
-                :src="getThumbnailUrl(photo)"
-                :alt="photo.name"
-                class="w-full h-full object-cover"
-              />
-              <span v-else class="text-gray-500 text-xs p-2 text-center truncate">{{
-                photo.name
-              }}</span>
-            </div>
-            <div class="p-2 text-xs text-gray-600 bg-white truncate">
-              {{ photo.dateStr }}
-            </div>
+          <div class="mt-6 flex justify-end">
+            <button
+              class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold shadow-md shadow-blue-200 transition-all transform hover:-translate-y-0.5"
+              @click="goToStep2"
+            >
+              次へ →
+            </button>
           </div>
         </div>
 
-        <div class="mt-6 flex justify-between gap-2">
-          <button
-            class="px-4 py-2 border rounded text-gray-700 hover:bg-gray-50"
-            @click="step = 'review'"
-          >
-            確認画面に戻る
-          </button>
+        <!-- Step 2: モード選択 & 枚数決定 -->
+        <div v-if="step === 'step2' && currentSession" class="bg-white p-6 rounded-xl shadow-md mb-6">
+          <h2 class="text-xl font-bold text-gray-900 mb-4">モード選択 & 枚数決定</h2>
+
+          <!-- Mode Selection -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700">モード選択</label>
+            <select
+              v-model="mode"
+              class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+            >
+              <option value="group">グループバランス (複数人のバランス重視)</option>
+              <option value="growth">成長記録 (特定の1人の時系列)</option>
+            </select>
+          </div>
+
+          <!-- Target Count -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700">選定枚数 (目標)</label>
+            <input
+              v-model.number="targetCount"
+              type="number"
+              class="mt-1 block w-full pl-3 pr-10 py-2 border-gray-300 rounded-md"
+            />
+          </div>
+
+          <!-- Face/Group Selection -->
+          <p class="mb-4 text-gray-600">アルバムに入れたい人物を選択してください。</p>
+
+          <FaceClusterSelector
+            :session="currentSession"
+            :single-selection="mode === 'growth'"
+            selection-only
+            @select="onFacesSelected"
+          />
+
+          <!-- Generate Button -->
+          <div class="mt-6 flex justify-center">
+            <button
+              :disabled="selectedClusters.length === 0 || isSelecting"
+              class="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-lg shadow-blue-200 transition-all transform hover:-translate-y-0.5 text-lg"
+              @click="generateAlbum"
+            >
+              {{ isSelecting ? '生成中...' : 'アルバム候補を生成' }}
+            </button>
+          </div>
+
+          <!-- Back button -->
+          <div class="mt-6 flex justify-start">
+            <button
+              class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              @click="goBackToStep1"
+            >
+              ← 分類に戻る
+            </button>
+          </div>
         </div>
-      </div>
+
+        <!-- Step 3: 完成 -->
+        <div v-if="step === 'step3'" class="bg-white p-6 rounded-xl shadow-md mb-6">
+          <div class="text-center mb-6">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-600 mb-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-900">選定完了</h2>
+            <p class="mt-1 text-gray-600">{{ confirmedPhotos.length }} 枚の写真を確定しました。</p>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div
+              v-for="photo in confirmedPhotos"
+              :key="photo.id"
+              class="border rounded-lg overflow-hidden"
+            >
+              <div class="aspect-video bg-gray-100 flex items-center justify-center overflow-hidden">
+                <img
+                  v-if="getThumbnailUrl(photo)"
+                  :src="getThumbnailUrl(photo)"
+                  :alt="photo.name"
+                  class="w-full h-full object-cover"
+                />
+                <span v-else class="text-gray-500 text-xs p-2 text-center truncate">{{
+                  photo.name
+                }}</span>
+              </div>
+              <div class="p-2 text-xs text-gray-600 bg-white truncate">
+                {{ photo.dateStr }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Backup Prompt -->
+          <div class="mt-8 p-5 bg-amber-50 border border-amber-200 rounded-xl">
+            <div class="flex items-start gap-3">
+              <div class="flex-shrink-0 w-10 h-10 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center">
+                <span class="i-lucide-download w-5 h-5" />
+              </div>
+              <div class="flex-1">
+                <h4 class="font-bold text-amber-900 text-sm">バックアップを取りましょう</h4>
+                <p class="text-amber-700 text-sm mt-1">
+                  選定結果を保存するために、バックアップファイルをダウンロードすることをおすすめします。
+                </p>
+                <button
+                  class="mt-3 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm font-semibold transition-colors inline-flex items-center gap-2"
+                  @click="onExport"
+                >
+                  <span class="i-lucide-download w-4 h-4" />
+                  バックアップ保存
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-6 flex justify-between gap-2">
+            <button
+              class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              @click="goBackToStep2"
+            >
+              ← 確認画面に戻る
+            </button>
+          </div>
+        </div>
+      </template>
     </div>
   </div>
 </template>

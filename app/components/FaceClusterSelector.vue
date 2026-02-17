@@ -34,6 +34,8 @@ const makePairKey = (idA: string, idB: string) => [idA, idB].sort().join(':')
 const props = defineProps<{
   session: ProcessingSession
   singleSelection?: boolean
+  hideSelection?: boolean
+  selectionOnly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -220,8 +222,8 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
             : 'border-gray-200 hover:border-blue-300'
         "
       >
-        <!-- Main Card Area - Opens Settings -->
-        <div class="cursor-pointer" @click="openSettings(cluster)">
+        <!-- Main Card Area -->
+        <div class="cursor-pointer" @click="props.selectionOnly ? toggleSelection(cluster) : openSettings(cluster)">
           <div class="aspect-square bg-gray-100 flex items-center justify-center relative">
             <img
               v-if="cluster.thumbnail"
@@ -231,7 +233,7 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
             <span v-else class="text-gray-400 text-xs">No Img</span>
           </div>
           <div class="p-2 text-center">
-            <div v-if="editingClusterId === cluster.id" @click.stop>
+            <div v-if="!props.selectionOnly && editingClusterId === cluster.id" @click.stop>
               <input
                 :ref="setEditInputRef"
                 v-model="editingLabel"
@@ -243,8 +245,9 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
 
             <div
               v-else
-              class="flex items-center justify-center gap-1 cursor-text hover:bg-gray-50 rounded px-1 transition-colors"
-              @click.stop="startEditing(cluster)"
+              class="flex items-center justify-center gap-1 rounded px-1 transition-colors"
+              :class="props.selectionOnly ? '' : 'cursor-text hover:bg-gray-50'"
+              @click.stop="!props.selectionOnly && startEditing(cluster)"
             >
               <span class="text-xs font-medium truncate">{{ cluster.label }}</span>
             </div>
@@ -253,7 +256,7 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
         </div>
 
         <!-- Selection Checkbox (Top Right) -->
-        <div class="absolute top-1 right-1 z-10" @click.stop="toggleSelection(cluster)">
+        <div v-if="!props.hideSelection" class="absolute top-1 right-1 z-10" @click.stop="toggleSelection(cluster)">
           <div
             class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer shadow-sm"
             :class="

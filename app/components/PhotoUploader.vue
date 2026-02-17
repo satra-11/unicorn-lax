@@ -22,7 +22,7 @@ const onFolderSelect = async (event: Event) => {
       v-if="(!isProcessing && !currentSession?.status) || currentSession?.status === 'completed'"
       class="text-center"
     >
-      <h2 class="text-xl font-bold mb-4 text-black">写真のアップロード</h2>
+      <h2 class="text-xl font-bold mb-4 text-black">AIモードの選択</h2>
 
       <!-- Model Selection -->
       <div class="mb-6 max-w-md mx-auto text-left">

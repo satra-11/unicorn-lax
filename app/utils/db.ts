@@ -291,6 +291,7 @@ export async function importDatabase(jsonString: string) {
       let faces = undefined
       if (Array.isArray(p.faces)) {
         faces = await Promise.all(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           p.faces.map(async (f: any) => {
             let fThumb = undefined
             if (typeof f.thumbnail === 'string') {
@@ -305,6 +306,7 @@ export async function importDatabase(jsonString: string) {
         )
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const restoredPhoto: any = {
         ...p,
         thumbnail: thumbnailBlob,

@@ -5,9 +5,6 @@ import { getDB, saveCluster, getAllClusters } from './db'
 // Threshold for face similarity. 0.6 is standard for dlib/face-api.js
 export const CLUSTER_THRESHOLD = 0.4
 
-// Threshold for matching a new cluster centroid to an existing persisted cluster
-const LABEL_CARRY_OVER_THRESHOLD = 0.4
-
 export async function clusterFaces(sessionId: string): Promise<FaceCluster[]> {
   const db = await getDB()
   const photos = await db.getAllFromIndex('photos', 'by-session', sessionId)
@@ -40,6 +37,7 @@ export async function clusterFaces(sessionId: string): Promise<FaceCluster[]> {
   const facesToCluster: {
     descriptor: Float32Array
     photoId: string
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     box: any
     thumbnail?: Blob
   }[] = []
@@ -290,27 +288,6 @@ export async function recalculateClusterCentroid(clusterId: string): Promise<voi
       `[Cluster] Recalculated centroid for ${cluster.label} using ${allDescriptors.length} faces.`,
     )
   }
-}
-
-function findExistingLabel(
-  existingClusters: FaceCluster[],
-  descriptor: Float32Array,
-  currentIndex: number,
-): string {
-  const defaultLabel = `Person ${currentIndex + 1}`
-
-  for (const existing of existingClusters) {
-    const existingDesc =
-      existing.descriptor instanceof Float32Array
-        ? existing.descriptor
-        : new Float32Array(existing.descriptor)
-    const distance = faceapi.euclideanDistance(Array.from(descriptor), Array.from(existingDesc))
-    if (distance < LABEL_CARRY_OVER_THRESHOLD) {
-      return existing.label
-    }
-  }
-
-  return defaultLabel
 }
 
 export async function getUnrecognizedPhotos(sessionId: string): Promise<Photo[]> {

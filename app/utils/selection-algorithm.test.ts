@@ -19,14 +19,14 @@ describe('selection-algorithm', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    // @ts-expect-error
+    // @ts-expect-error -- Mocking specific method
     db.getDB.mockResolvedValue(mockDB)
   })
 
   describe('selectGroupBalancedPhotos', () => {
     it('should return empty array if no photos', async () => {
       mockDB.getAllFromIndex.mockResolvedValue([])
-      // @ts-expect-error
+      // @ts-expect-error -- Mocking return value
       burstDetection.deduplicateBurstPhotos.mockReturnValue([])
 
       const result = await selectGroupBalancedPhotos('session1', [], 5)
@@ -42,12 +42,12 @@ describe('selection-algorithm', () => {
       const clusterB = { id: 'B', descriptor: [0.2] } as any
 
       mockDB.getAllFromIndex.mockResolvedValue([p1, p2, p3])
-      // @ts-expect-error
+      // @ts-expect-error -- Mocking return value
       burstDetection.deduplicateBurstPhotos.mockReturnValue([p1, p2, p3])
 
       // Mock face matching
       vi.mocked(faceapi.euclideanDistance).mockImplementation((d1, d2) => {
-        // @ts-expect-error
+        // @ts-expect-error -- Mocking implementation with simple diff
         return Math.abs(d1[0] - d2[0]) // Simple distance
       })
 
@@ -86,7 +86,7 @@ describe('selection-algorithm', () => {
       const clusterA = { id: 'A', descriptor: [0.1] } as any
 
       mockDB.getAllFromIndex.mockResolvedValue([p1, p2, p3, p4, p5])
-      // @ts-expect-error
+      // @ts-expect-error -- Mocking return value
       burstDetection.deduplicateBurstPhotos.mockReturnValue([p1, p2, p3, p4, p5])
 
       vi.mocked(faceapi.euclideanDistance).mockReturnValue(0) // Perfect match
@@ -118,7 +118,7 @@ describe('selection-algorithm', () => {
       const clusterA = { id: 'A', descriptor: [0.1] } as any
 
       mockDB.getAllFromIndex.mockResolvedValue([p1])
-      // @ts-expect-error
+      // @ts-expect-error -- Mocking return value
       burstDetection.deduplicateBurstPhotos.mockReturnValue([p1])
 
       const result = await selectGrowthPhotos('session1', clusterA, 3)

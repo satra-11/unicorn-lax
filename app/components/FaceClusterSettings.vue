@@ -1,11 +1,8 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, toRaw, computed } from 'vue'
 import type { FaceCluster, Photo } from '~/utils/types'
-import { recalculateClusterCentroid } from '~/utils/clustering'
-import { getPhoto, saveCluster, getPhotosBySession } from '~/utils/db'
-
-// Move Logic
-import { movePhotoToCluster } from '~/utils/clustering'
+import { recalculateClusterCentroid, movePhotoToCluster } from '~/utils/clustering'
+import { getPhoto, saveCluster } from '~/utils/db'
 
 const props = defineProps<{
   cluster: FaceCluster

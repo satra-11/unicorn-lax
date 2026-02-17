@@ -28,7 +28,7 @@ describe('burst-detection', () => {
           height: 100,
           name: '1.jpg',
           url: '1.jpg',
-        } as any,
+        } as unknown as Photo,
         {
           id: '2',
           timestamp: 2000,
@@ -37,7 +37,7 @@ describe('burst-detection', () => {
           height: 100,
           name: '2.jpg',
           url: '2.jpg',
-        } as any, // diff 1000
+        } as unknown as Photo, // diff 1000
         {
           id: '3',
           timestamp: 4001,
@@ -46,7 +46,7 @@ describe('burst-detection', () => {
           height: 100,
           name: '3.jpg',
           url: '3.jpg',
-        } as any, // diff 2001 (new group)
+        } as unknown as Photo, // diff 2001 (new group)
         {
           id: '4',
           timestamp: 4500,
@@ -55,7 +55,7 @@ describe('burst-detection', () => {
           height: 100,
           name: '4.jpg',
           url: '4.jpg',
-        } as any, // diff 499
+        } as unknown as Photo, // diff 499
       ]
 
       const groups = groupBurstPhotos(photos)
@@ -76,7 +76,7 @@ describe('burst-detection', () => {
           height: 100,
           name: '1.jpg',
           url: '1.jpg',
-        } as any,
+        } as unknown as Photo,
       ]
       const groups = groupBurstPhotos(photos)
       expect(groups).toHaveLength(1)
@@ -87,7 +87,9 @@ describe('burst-detection', () => {
   describe('selectBestFromBurst', () => {
     it('should return the only photo in a group of size 1', () => {
       const group = {
-        photos: [{ id: '1', timestamp: 1000, faces: [], width: 100, height: 100 } as any],
+        photos: [
+          { id: '1', timestamp: 1000, faces: [], width: 100, height: 100 } as unknown as Photo,
+        ],
       }
       const best = selectBestFromBurst(group, [])
       expect(best.id).toBe('1')
@@ -102,14 +104,19 @@ describe('burst-detection', () => {
         descriptor: new Float32Array(),
         meanDescriptor: new Float32Array(),
         memberDescriptors: [],
-      } as any
+      } as unknown as FaceCluster
 
       const p1: Photo = {
         id: '1',
         timestamp: 1000,
-        faces: [{ descriptor: new Float32Array(), box: { width: 10, height: 10 } } as any],
-      } as any
-      const p2: Photo = { id: '2', timestamp: 1100, faces: [] } as any // No faces
+        faces: [
+          {
+            descriptor: new Float32Array(),
+            box: { width: 10, height: 10 },
+          } as unknown as NonNullable<Photo['faces']>[0],
+        ],
+      } as unknown as Photo
+      const p2: Photo = { id: '2', timestamp: 1100, faces: [] } as unknown as Photo // No faces
 
       const group = { photos: [p1, p2] }
       // p1 matches 1 subject (score approx 1000 + small area/count)
@@ -123,16 +130,27 @@ describe('burst-detection', () => {
       const p1: Photo = {
         id: '1',
         timestamp: 1000,
-        faces: [{ descriptor: new Float32Array(), box: { width: 10, height: 10 } } as any],
-      } as any
+        faces: [
+          {
+            descriptor: new Float32Array(),
+            box: { width: 10, height: 10 },
+          } as unknown as NonNullable<Photo['faces']>[0],
+        ],
+      } as unknown as Photo
       const p2: Photo = {
         id: '2',
         timestamp: 1100,
         faces: [
-          { descriptor: new Float32Array(), box: { width: 10, height: 10 } } as any,
-          { descriptor: new Float32Array(), box: { width: 10, height: 10 } } as any,
+          {
+            descriptor: new Float32Array(),
+            box: { width: 10, height: 10 },
+          } as unknown as NonNullable<Photo['faces']>[0],
+          {
+            descriptor: new Float32Array(),
+            box: { width: 10, height: 10 },
+          } as unknown as NonNullable<Photo['faces']>[0],
         ],
-      } as any
+      } as unknown as Photo
 
       // Both match 0 subjects (if no targets provided)
       const group = { photos: [p1, p2] }
@@ -152,7 +170,7 @@ describe('burst-detection', () => {
           height: 100,
           name: '1.jpg',
           url: '1.jpg',
-        } as any,
+        } as unknown as Photo,
         {
           id: '2',
           timestamp: 2000,
@@ -161,7 +179,7 @@ describe('burst-detection', () => {
           height: 100,
           name: '2.jpg',
           url: '2.jpg',
-        } as any, // Group 1
+        } as unknown as Photo, // Group 1
         {
           id: '3',
           timestamp: 4001,
@@ -170,7 +188,7 @@ describe('burst-detection', () => {
           height: 100,
           name: '3.jpg',
           url: '3.jpg',
-        } as any, // Group 2
+        } as unknown as Photo, // Group 2
       ]
 
       const result = deduplicateBurstPhotos(photos)

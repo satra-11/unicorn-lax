@@ -18,7 +18,7 @@ const step = ref<'upload' | 'select-faces' | 'review' | 'confirmed'>('upload')
 const selectedClusters = ref<FaceCluster[]>([])
 const generatedPhotos = ref<Photo[]>([])
 const mode = ref<'group' | 'growth'>('group')
-const targetCount = ref(50)
+const targetCount = ref(10)
 const isSelecting = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 

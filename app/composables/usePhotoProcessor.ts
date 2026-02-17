@@ -1,7 +1,7 @@
 import { ref } from 'vue';
 import type { Photo, ProcessingSession } from '~/utils/types';
 import { extractMetadata, calculateHash } from '~/utils/metadata';
-import { savePhoto, saveSession, getPhotoByHash } from '~/utils/db';
+import { savePhoto, saveSession, getPhotoByHash, getSession, getPhotosBySession } from '~/utils/db';
 
 // Singleton State
 const isProcessing = ref(false);
@@ -96,7 +96,7 @@ const detectFacesInWorker = async (photoId: string, imageBitmap: ImageBitmap) =>
 };
 
 export const usePhotoProcessor = () => {
-  const processFiles = async (files: FileList | File[]) => {
+    const processFiles = async (files: FileList | File[], appendSessionId?: string) => {
     if (isProcessing.value) return;
     initWorker();
     
@@ -109,26 +109,51 @@ export const usePhotoProcessor = () => {
     }
 
     isProcessing.value = true;
-    total.value = fileArray.length;
     progress.value = 0;
 
-    const sessionId = `session-${Date.now()}`;
-    const session: ProcessingSession = {
-      id: sessionId,
-      folderName: (files[0] as any).webkitRelativePath?.split('/')[0] || 'Generic Upload',
-      totalFiles: fileArray.length,
-      processedCount: 0,
-      status: 'processing',
-      createdAt: Date.now(),
-      updatedAt: Date.now()
-    };
+    let session: ProcessingSession;
+    const processedHashesInSession = new Set<string>();
+
+    if (appendSessionId) {
+        // Appending to existing session
+        const existingSession = await getSession(appendSessionId);
+        if (existingSession) {
+            session = existingSession;
+            // Load existing photos to check for duplicates
+            const existingPhotos = await getPhotosBySession(appendSessionId);
+            existingPhotos.forEach(p => {
+                if (p.hash) processedHashesInSession.add(p.hash);
+            });
+            session.totalFiles += fileArray.length;
+            session.status = 'processing';
+            session.updatedAt = Date.now();
+            total.value = session.totalFiles;
+            // Update progress to current processed count so bar starts correctly
+            progress.value = session.processedCount; 
+        } else {
+             console.error('Session not found', appendSessionId);
+             isProcessing.value = false;
+             return;
+        }
+    } else {
+        // New Session
+        const sessionId = `session-${Date.now()}`;
+        session = {
+            id: sessionId,
+            folderName: (files[0] as any).webkitRelativePath?.split('/')[0] || 'Generic Upload',
+            totalFiles: fileArray.length,
+            processedCount: 0,
+            status: 'processing',
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+        };
+        total.value = fileArray.length;
+    }
     
     currentSession.value = session;
     await saveSession(session);
 
     const BATCH_SIZE = 5;
-    
-    const processedHashesInSession = new Set<string>();
     
     for (let i = 0; i < fileArray.length; i += BATCH_SIZE) {
         const batch = fileArray.slice(i, i + BATCH_SIZE);
@@ -137,9 +162,14 @@ export const usePhotoProcessor = () => {
                 const meta = await extractMetadata(file); // This might consume the file stream?
                 const hash = await calculateHash(file);
                 
-                // 1. Check if we already processed this hash IN THIS SESSION (e.g. user selected same file twice)
+                // 1. Check if we already processed this hash IN THIS SESSION (e.g. user selected same file twice OR already in session)
                 if (processedHashesInSession.has(hash)) {
-                    console.log('Skipping duplicate photo in current batch (in-memory test):', file.name);
+                    console.log('Skipping duplicate photo in current session:', file.name);
+                    // If we are appending, we might be counting a "new" file that is actually a duplicate.
+                    // If we skip it, we should probably NOT increment session.processedCount?
+                    // Actually, totalFiles was incremented by fileArray.length. 
+                    // If we skip, we still need to "account" for this file in the progress bar or reduce total?
+                    // Let's just treat it as "processed" (skipped) and increment progress so bar completes.
                     progress.value++;
                     return;
                 }
@@ -153,7 +183,7 @@ export const usePhotoProcessor = () => {
                     const modelMatch = existing.detectionModel === faceModel.value;
                     
                     if (modelMatch) {
-                        if (existing.sessionId === sessionId) {
+                        if (existing.sessionId === session.id) {
                              console.log('Skipping duplicate photo in same session (DB check):', file.name);
                              progress.value++; 
                              return; 
@@ -163,7 +193,7 @@ export const usePhotoProcessor = () => {
                              const reusedPhoto: Photo = {
                                 ...existing,
                                 id: crypto.randomUUID(),
-                                sessionId,
+                                sessionId: session.id,
                                 name: file.name, // Use current file name just in case
                                 relativePath: (file as any).webkitRelativePath || file.name,
                                 // Ensure we keep the hash & model
@@ -182,7 +212,7 @@ export const usePhotoProcessor = () => {
 
                 const photo: Photo = {
                     id: crypto.randomUUID(),
-                    sessionId,
+                    sessionId: session.id,
                     name: file.name,
                     relativePath: (file as any).webkitRelativePath || file.name,
                     timestamp: meta.timestamp,
@@ -281,6 +311,10 @@ export const usePhotoProcessor = () => {
     
     isProcessing.value = false;
     session.status = 'completed';
+    // Ensure totalFiles reflects the actual unique photos
+    session.totalFiles = processedHashesInSession.size;
+    session.processedCount = session.totalFiles;
+    
     await saveSession(session);
     
     // Explicitly update currentSession to trigger watchers if needed (though nested property change might need deep watch or re-assignment)

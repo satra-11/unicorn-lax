@@ -97,7 +97,7 @@ const onResetDb = async () => {
       <div v-if="step === 'upload' || isProcessing || (currentSession?.status === 'processing')" class="bg-white p-6 rounded shadow mb-6">
         <div v-if="currentSession && currentSession.status === 'completed'" class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex justify-between items-center">
             <div>
-                <p class="font-bold text-blue-900">前回のセッションが保存されています</p>
+                <p class="font-bold text-blue-900">分析済みのデータがあります</p>
                 <p class="text-sm text-blue-700">{{ currentSession.totalFiles }} 枚の写真を分析済み</p>
             </div>
             <button @click="step = 'select-faces'" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold shadow-sm transition-colors">
@@ -105,7 +105,7 @@ const onResetDb = async () => {
             </button>
         </div>
 
-        <PhotoUploader />
+        <PhotoUploader :current-session-id="currentSession?.id" />
         <div class="mt-4 flex justify-end">
              <button @click="onResetDb" class="text-sm text-red-500 hover:underline">Reset Database</button>
         </div>

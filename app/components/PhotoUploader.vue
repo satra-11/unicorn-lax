@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { usePhotoProcessor } from '~/composables/usePhotoProcessor';
 
+const props = defineProps<{
+  currentSessionId?: string;
+}>();
+
 const { processFiles, isProcessing, progress, total, currentSession, faceModel, setFaceModel } = usePhotoProcessor();
 
 const onFolderSelect = async (event: Event) => {
   const input = event.target as HTMLInputElement;
   if (input.files && input.files.length > 0) {
-    await processFiles(input.files);
+    await processFiles(input.files, props.currentSessionId);
   }
 };
 </script>

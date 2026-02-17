@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, onMounted } from 'vue';
 import { usePhotoProcessor } from '~/composables/usePhotoProcessor';
 import FaceClusterSelector from '~/components/FaceClusterSelector.vue';
 import AlbumPreview from '~/components/AlbumPreview.vue';
 import type { FaceCluster, Photo } from '~/utils/types';
 import { selectGroupBalancedPhotos, selectGrowthPhotos } from '~/utils/selection-algorithm';
-import { clearExisitingData } from '~/utils/db';
+import { clearExisitingData, getLastSession } from '~/utils/db';
 
 const { isProcessing, progress, total, currentSession } = usePhotoProcessor();
 const step = ref<'upload' | 'select-faces' | 'review' | 'confirmed'>('upload');
@@ -16,9 +16,24 @@ const targetCount = ref(50);
 const isSelecting = ref(false);
 
 // Watch for processing completion to move to next step
+// Watch for processing completion to move to next step
 watch(() => currentSession.value?.status, (newStatus) => {
     if (newStatus === 'completed') {
         step.value = 'select-faces';
+    }
+});
+
+onMounted(async () => {
+    try {
+        const lastSession = await getLastSession();
+        if (lastSession && lastSession.status === 'completed') {
+            console.log('Restoring last session:', lastSession.id);
+            // We need to set it in the composable so it's shared/reactive
+            currentSession.value = lastSession;
+            step.value = 'select-faces';
+        }
+    } catch (e) {
+        console.error('Failed to restore session:', e);
     }
 });
 
@@ -80,6 +95,16 @@ const onResetDb = async () => {
     <div class="w-full max-w-4xl px-4">
       <!-- Step 1: Upload -->
       <div v-if="step === 'upload' || isProcessing || (currentSession?.status === 'processing')" class="bg-white p-6 rounded shadow mb-6">
+        <div v-if="currentSession && currentSession.status === 'completed'" class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex justify-between items-center">
+            <div>
+                <p class="font-bold text-blue-900">前回のセッションが保存されています</p>
+                <p class="text-sm text-blue-700">{{ currentSession.totalFiles }} 枚の写真を分析済み</p>
+            </div>
+            <button @click="step = 'select-faces'" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold shadow-sm transition-colors">
+                人物選択へ進む →
+            </button>
+        </div>
+
         <PhotoUploader />
         <div class="mt-4 flex justify-end">
              <button @click="onResetDb" class="text-sm text-red-500 hover:underline">Reset Database</button>
@@ -88,7 +113,12 @@ const onResetDb = async () => {
 
       <!-- Step 2: Select Faces -->
       <div v-if="step === 'select-faces' && currentSession" class="bg-white p-6 rounded shadow mb-6">
-        <h2 class="text-xl font-bold mb-4 text-black">対象の人物を選択</h2>
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-black">対象の人物を選択</h2>
+            <button @click="step = 'upload'" class="text-sm text-blue-600 hover:underline">
+                ← 写真を追加 / アップロード画面へ
+            </button>
+        </div>
 
         <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700">モード選択</label>

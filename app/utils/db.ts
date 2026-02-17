@@ -113,3 +113,12 @@ export async function clearExisitingData() {
   await db.clear('clusters');
   console.log('Existing data cleared.');
 }
+
+export async function getLastSession(): Promise<ProcessingSession | undefined> {
+  const db = await getDB();
+  const sessions = await db.getAll('sessions');
+  if (sessions.length === 0) return undefined;
+  return sessions.reduce((latest, current) => {
+    return (latest.updatedAt > current.updatedAt) ? latest : current;
+  });
+}

@@ -5,7 +5,7 @@ import FaceClusterSelector from '~/components/FaceClusterSelector.vue'
 import AlbumPreview from '~/components/AlbumPreview.vue'
 import type { FaceCluster, Photo } from '~/utils/types'
 import { selectGroupBalancedPhotos, selectGrowthPhotos } from '~/utils/selection-algorithm'
-import { clearExisitingData, clearPhotos, getLastSession, exportDatabase, importDatabase } from '~/utils/db'
+import { clearExistingData, clearPhotos, getLastSession, exportDatabase, importDatabase } from '~/utils/db'
 
 const { isProcessing, progress, total, currentSession } = usePhotoProcessor()
 const step = ref<'upload' | 'select-faces' | 'review' | 'confirmed'>('upload')
@@ -92,7 +92,7 @@ const confirmSelection = () => {
 
 const onResetDb = async () => {
   if (confirm('全てのデータを消去しますか？この操作は取り消せません。')) {
-    await clearExisitingData()
+    await clearExistingData()
     window.location.reload()
   }
 }

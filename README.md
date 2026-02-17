@@ -1,58 +1,68 @@
-# Nuxt Starter Template
+# Unicorn Lax
 
-[![Nuxt UI](https://img.shields.io/badge/Made%20with-Nuxt%20UI-00DC82?logo=nuxt&labelColor=020420)](https://ui.nuxt.com)
+AIによる顔認識で、大量の写真から均等・効率的にアルバム用写真を自動選定するブラウザ完結型ツール。
 
-Use this template to get started with [Nuxt UI](https://ui.nuxt.com) quickly.
+保育園・幼稚園のアルバム作成など、大量の写真からどの子も均等に映った写真を選ぶ作業を **90%効率化** します。
 
-- [Live demo](https://starter-template.nuxt.dev/)
-- [Documentation](https://ui.nuxt.com/docs/getting-started/installation/nuxt)
+## 主な機能
 
-<a href="https://starter-template.nuxt.dev/" target="_blank">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://ui.nuxt.com/assets/templates/nuxt/starter-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://ui.nuxt.com/assets/templates/nuxt/starter-light.png">
-    <img alt="Nuxt Starter Template" src="https://ui.nuxt.com/assets/templates/nuxt/starter-light.png" width="830" height="466">
-  </picture>
-</a>
+- **顔認識・自動分類** — face-api.js によるブラウザ内顔検出＆クラスタリング
+- **グループバランスモード** — 複数人が均等に含まれるよう写真を自動選定
+- **成長記録モード** — 特定の1人を時系列で追跡し、均等に選定
+- **連写検出** — 連続撮影の重複を自動除去
+- **フィードバック学習** — 誤分類の修正で精度が向上
+- **バックアップ/復元** — JSON形式でデータのエクスポート/インポート
+- **完全ブラウザ完結** — 画像がサーバーに送信されることはありません
 
-> The starter template for Vue is on https://github.com/nuxt-ui-templates/starter-vue.
+## 技術スタック
 
-## Quick Start
+| カテゴリ         | 技術                                                                         |
+| :--------------- | :--------------------------------------------------------------------------- |
+| フレームワーク   | [Nuxt 4](https://nuxt.com/) (Vue 3)                                          |
+| UI               | [Nuxt UI](https://ui.nuxt.com/) + [Tailwind CSS 4](https://tailwindcss.com/) |
+| 顔認識           | [face-api.js](https://github.com/justadudewhohacks/face-api.js) (Web Worker) |
+| データストレージ | IndexedDB ([idb](https://github.com/jakearchibald/idb))                      |
+| ホスティング     | [Cloudflare Pages](https://pages.cloudflare.com/)                            |
+| CI/CD            | GitHub Actions                                                               |
+| テスト           | [Vitest](https://vitest.dev/)                                                |
 
-```bash [Terminal]
-npm create nuxt@latest -- -t github:nuxt-ui-templates/starter
-```
-
-## Deploy your own
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-name=starter&repository-url=https%3A%2F%2Fgithub.com%2Fnuxt-ui-templates%2Fstarter&demo-image=https%3A%2F%2Fui.nuxt.com%2Fassets%2Ftemplates%2Fnuxt%2Fstarter-dark.png&demo-url=https%3A%2F%2Fstarter-template.nuxt.dev%2F&demo-title=Nuxt%20Starter%20Template&demo-description=A%20minimal%20template%20to%20get%20started%20with%20Nuxt%20UI.)
-
-This project uses **Bun** as the package manager.
-
-## Setup
+## セットアップ
 
 ```bash
-bun install
+pnpm install
 ```
 
-## Development
+## 開発
 
 ```bash
-bun run dev
+pnpm dev
 ```
 
-## Production
-
-Build the application for production:
+## ビルド
 
 ```bash
 pnpm build
 ```
 
-Locally preview production build:
+## テスト
 
 ```bash
-pnpm preview
+pnpm vitest run
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+## デプロイ
+
+`main` ブランチへの push 時に GitHub Actions 経由で Cloudflare Pages へ自動デプロイされます。
+
+### 必要なシークレット
+
+GitHub リポジトリの Settings > Secrets に以下を設定:
+
+| シークレット名          | 説明                                       |
+| :---------------------- | :----------------------------------------- |
+| `CLOUDFLARE_API_TOKEN`  | Cloudflare API トークン (Pages の編集権限) |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare アカウント ID                   |
+
+## ライセンス
+
+[MIT](./LICENSE)

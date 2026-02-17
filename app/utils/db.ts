@@ -105,7 +105,7 @@ export async function updateClusterLabel(id: string, label: string) {
   }
 }
 
-export async function clearExisitingData() {
+export async function clearExistingData() {
   console.log('Clearing existing data...')
   const db = await getDB()
   await db.clear('photos')
@@ -269,7 +269,7 @@ export async function importDatabase(jsonString: string) {
       throw new Error('Invalid backup file format')
     }
 
-    await clearExisitingData()
+    await clearExistingData()
     const db = await getDB()
 
     // Restore Sessions

@@ -14,7 +14,6 @@ export interface Photo {
   // but might store thumbnail separately or just path if accessing via FileSystemHandle (in future).
   // For now, we assume we re-read file or store thumbnail.
   thumbnail?: Blob
-  noFaceMatch?: boolean
   excluded?: boolean
   hash?: string
   detectionModel?: 'ssd' | 'tiny'

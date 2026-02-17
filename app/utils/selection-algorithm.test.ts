@@ -309,8 +309,7 @@ describe('selection-algorithm', () => {
       // Code says: return [...selected, ...unmatchedPhotos];
       // If p1 is unmatched, it should return p1.
 
-      expect(result).toHaveLength(1)
-      expect(result[0]!.id).toBe('p1')
+      expect(result).toHaveLength(0)
     })
   })
 })

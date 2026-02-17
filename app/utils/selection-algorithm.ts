@@ -34,7 +34,7 @@ function matchPhotoToSubjects(
 function buildScoredPhotos(allPhotos: Photo[], targetClusters: FaceCluster[]): ScoredPhoto[] {
   return allPhotos.map((photo) => {
     const { subjects, matched } = matchPhotoToSubjects(photo, targetClusters)
-    return { photo: { ...photo, noFaceMatch: !matched }, subjects, matched }
+    return { photo: { ...photo }, subjects, matched }
   })
 }
 
@@ -150,7 +150,8 @@ export async function selectGrowthPhotos(
   if (scoredPhotos.length === 0) return []
 
   const matched = scoredPhotos.filter((p) => p.matched)
-  const unmatched = scoredPhotos.filter((p) => !p.matched)
+  // We no longer include unmatched photos (faces not detected or other people)
+  // const unmatched = scoredPhotos.filter((p) => !p.matched)
 
   const selected: Photo[] = []
 
@@ -186,7 +187,7 @@ export async function selectGrowthPhotos(
     }
   }
 
-  const unmatchedPhotos = unmatched.map((p) => p.photo)
-
-  return [...selected, ...unmatchedPhotos]
+  // const unmatchedPhotos = unmatched.map((p) => p.photo)
+  // return [...selected, ...unmatchedPhotos]
+  return selected
 }

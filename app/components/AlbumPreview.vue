@@ -51,9 +51,7 @@ const togglePhoto = (photo: Photo) => {
 
 const includedCount = computed(() => props.photos.filter((p) => !p.excluded).length)
 
-const matchedPhotos = computed(() => props.photos.filter((p) => !p.noFaceMatch))
-
-const unmatchedPhotos = computed(() => props.photos.filter((p) => p.noFaceMatch))
+const matchedPhotos = computed(() => props.photos)
 </script>
 
 <template>
@@ -69,7 +67,7 @@ const unmatchedPhotos = computed(() => props.photos.filter((p) => p.noFaceMatch)
           class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-100 text-green-600 text-xs"
           >✓</span
         >
-        顔認識あり ({{ matchedPhotos.length }})
+        写真一覧 ({{ matchedPhotos.length }})
       </h3>
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         <div
@@ -99,55 +97,6 @@ const unmatchedPhotos = computed(() => props.photos.filter((p) => p.noFaceMatch)
             <span
               v-if="!photo.excluded"
               class="shrink-0 inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-500 text-white text-[10px]"
-              >✓</span
-            >
-            <span
-              v-else
-              class="shrink-0 inline-flex items-center justify-center w-4 h-4 rounded-full bg-gray-300 text-white text-[10px]"
-              >✕</span
-            >
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Unmatched photos -->
-    <div v-if="unmatchedPhotos.length > 0">
-      <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-        <span
-          class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 text-amber-600 text-xs"
-          >⚠</span
-        >
-        顔未検出 ({{ unmatchedPhotos.length }})
-      </h3>
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        <div
-          v-for="photo in unmatchedPhotos"
-          :key="photo.id"
-          class="relative border-2 rounded-lg overflow-hidden cursor-pointer transition-all"
-          :class="
-            photo.excluded
-              ? 'border-gray-200 opacity-40 grayscale'
-              : 'border-amber-300 ring-1 ring-amber-200'
-          "
-          @click="togglePhoto(photo)"
-        >
-          <div class="aspect-video bg-amber-50 flex items-center justify-center overflow-hidden">
-            <img
-              v-if="getThumbnailUrl(photo)"
-              :src="getThumbnailUrl(photo)"
-              :alt="photo.name"
-              class="w-full h-full object-cover"
-            />
-            <span v-else class="text-gray-400 text-xs p-2 text-center truncate">{{
-              photo.name
-            }}</span>
-          </div>
-          <div class="p-2 text-xs text-gray-600 bg-white flex items-center justify-between gap-1">
-            <span class="truncate">{{ photo.dateStr }}</span>
-            <span
-              v-if="!photo.excluded"
-              class="shrink-0 inline-flex items-center justify-center w-4 h-4 rounded-full bg-amber-500 text-white text-[10px]"
               >✓</span
             >
             <span

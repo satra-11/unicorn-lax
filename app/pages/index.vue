@@ -267,7 +267,11 @@ const onImportFile = async (event: Event) => {
 
         <p class="mb-4 text-gray-600 text-black">アルバムに入れたい人物を選択してください。</p>
 
-        <FaceClusterSelector :session="currentSession" @select="onFacesSelected" />
+        <FaceClusterSelector
+          :session="currentSession"
+          :single-selection="mode === 'growth'"
+          @select="onFacesSelected"
+        />
 
         <div class="mt-6 flex justify-end">
           <button

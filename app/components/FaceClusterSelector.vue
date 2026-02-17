@@ -7,6 +7,7 @@ import FaceClusterSettings from '~/components/FaceClusterSettings.vue'
 
 const props = defineProps<{
   session: ProcessingSession
+  singleSelection?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -65,16 +66,42 @@ const handleSettingsUpdate = async () => {
 onMounted(loadClusters)
 watch(() => props.session, loadClusters)
 
+// Watch for singleSelection prop change to enforce valid state
+watch(
+  () => props.singleSelection,
+  (isSingle) => {
+    if (isSingle && selectedClusters.value.size > 1) {
+      // Keep only the most recently added or just clear all but one.
+      // Since Set doesn't track order reliably in all envs (though usually insertion order),
+      // let's just keep the first one found.
+      const first = selectedClusters.value.values().next().value
+      selectedClusters.value.clear()
+      if (first) {
+        selectedClusters.value.add(first)
+        emitSelection()
+      } else {
+        emitSelection()
+      }
+    }
+  },
+)
+
+const emitSelection = () => {
+  const selected = clusters.value.filter((c) => selectedClusters.value.has(c.id))
+  emit('select', selected)
+}
+
 const toggleSelection = (cluster: FaceCluster) => {
   if (selectedClusters.value.has(cluster.id)) {
     selectedClusters.value.delete(cluster.id)
   } else {
+    if (props.singleSelection) {
+      selectedClusters.value.clear()
+    }
     selectedClusters.value.add(cluster.id)
   }
 
-  // Emit current selection
-  const selected = clusters.value.filter((c) => selectedClusters.value.has(c.id))
-  emit('select', selected)
+  emitSelection()
 }
 
 const setEditInputRef = (el: unknown) => {

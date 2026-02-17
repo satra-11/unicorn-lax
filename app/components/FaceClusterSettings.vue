@@ -162,25 +162,6 @@ const getPhotoUrl = (photo: Photo) => {
               />
           </div>
 
-          <!-- Threshold Settings - Hidden for Unrecognized -->
-          <div v-if="!isUnrecognized" class="bg-gray-50 p-5 rounded-lg border border-gray-100">
-              <h3 class="text-sm font-semibold text-gray-900 mb-3">認識感度 (類似度しきい値)</h3>
-              <div class="flex items-center gap-4">
-                  <input 
-                      type="range" 
-                      min="0.1" 
-                      max="0.8" 
-                      step="0.05" 
-                      v-model.number="threshold"
-                      class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                  />
-                  <span class="text-sm font-mono font-medium text-gray-700 bg-white px-2 py-1 rounded border min-w-[3rem] text-center">{{ threshold }}</span>
-              </div>
-              <p class="text-xs text-gray-500 mt-2">
-                  <span class="font-medium">低い (0.1)</span> = 厳しい (判定が慎重になる) <br/>
-                  <span class="font-medium">高い (0.8)</span> = 緩い (判定が広くなる)
-              </p>
-          </div>
 
           <!-- Feedback / Training -->
           <div>

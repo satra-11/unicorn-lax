@@ -1,124 +1,124 @@
-import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { Photo, ProcessingSession, FaceCluster } from './types';
+import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
+import type { Photo, ProcessingSession, FaceCluster } from './types'
 
 interface AppDB extends DBSchema {
   photos: {
-    key: string; // photo id
-    value: Photo;
-    indexes: { 'by-session': string; 'by-timestamp': number; 'by-hash': string };
-  };
+    key: string // photo id
+    value: Photo
+    indexes: { 'by-session': string; 'by-timestamp': number; 'by-hash': string }
+  }
   sessions: {
-    key: string; // session id
-    value: ProcessingSession;
-  };
+    key: string // session id
+    value: ProcessingSession
+  }
   clusters: {
-    key: string; // cluster id
-    value: FaceCluster;
-  };
+    key: string // cluster id
+    value: FaceCluster
+  }
 }
 
-const DB_NAME = 'photo-selector-db';
-const DB_VERSION = 2;
+const DB_NAME = 'photo-selector-db'
+const DB_VERSION = 2
 
-let dbPromise: Promise<IDBPDatabase<AppDB>>;
+let dbPromise: Promise<IDBPDatabase<AppDB>>
 
 export function getDB() {
   if (!dbPromise) {
     dbPromise = openDB<AppDB>(DB_NAME, DB_VERSION, {
       upgrade(db, oldVersion, newVersion, transaction) {
         if (!db.objectStoreNames.contains('photos')) {
-          const store = db.createObjectStore('photos', { keyPath: 'id' });
-          store.createIndex('by-session', 'sessionId'); // Make sure Photo has sessionId
-          store.createIndex('by-timestamp', 'timestamp');
-          store.createIndex('by-hash', 'hash');
+          const store = db.createObjectStore('photos', { keyPath: 'id' })
+          store.createIndex('by-session', 'sessionId') // Make sure Photo has sessionId
+          store.createIndex('by-timestamp', 'timestamp')
+          store.createIndex('by-hash', 'hash')
         } else {
-            // Migration for existing DB
-            const store = transaction.objectStore('photos');
-            if (!store.indexNames.contains('by-hash')) {
-                store.createIndex('by-hash', 'hash');
-            }
+          // Migration for existing DB
+          const store = transaction.objectStore('photos')
+          if (!store.indexNames.contains('by-hash')) {
+            store.createIndex('by-hash', 'hash')
+          }
         }
         if (!db.objectStoreNames.contains('sessions')) {
-          db.createObjectStore('sessions', { keyPath: 'id' });
+          db.createObjectStore('sessions', { keyPath: 'id' })
         }
         if (!db.objectStoreNames.contains('clusters')) {
-          db.createObjectStore('clusters', { keyPath: 'id' });
+          db.createObjectStore('clusters', { keyPath: 'id' })
         }
       },
-    });
+    })
   }
-  return dbPromise;
+  return dbPromise
 }
 
 export async function savePhoto(photo: Photo) {
-  const db = await getDB();
-  return db.put('photos', photo);
+  const db = await getDB()
+  return db.put('photos', photo)
 }
 
 export async function getPhotosBySession(sessionId: string) {
-  const db = await getDB();
+  const db = await getDB()
   // We need to add sessionId to Photo interface in types.ts first if we want to index by it.
   // Assuming we filter manually or add index.
   // For now, let's just get all and filter or use cursor.
   // Actually, let's update Photo interface later or now.
   // But wait, getAllFromIndex is better.
   // We will assume Photo has a sessionId field.
-  return db.getAllFromIndex('photos', 'by-session', sessionId);
+  return db.getAllFromIndex('photos', 'by-session', sessionId)
 }
 
 export async function getPhotoByHash(hash: string): Promise<Photo | undefined> {
-  const db = await getDB();
-  return db.getFromIndex('photos', 'by-hash', hash);
+  const db = await getDB()
+  return db.getFromIndex('photos', 'by-hash', hash)
 }
 
 export async function getPhoto(id: string) {
-  const db = await getDB();
-  return db.get('photos', id);
+  const db = await getDB()
+  return db.get('photos', id)
 }
 
 export async function saveSession(session: ProcessingSession) {
-  const db = await getDB();
-  return db.put('sessions', session);
+  const db = await getDB()
+  return db.put('sessions', session)
 }
 
 export async function getSession(id: string) {
-  const db = await getDB();
-  return db.get('sessions', id);
+  const db = await getDB()
+  return db.get('sessions', id)
 }
 
 export async function saveCluster(cluster: FaceCluster) {
-  const db = await getDB();
-  return db.put('clusters', cluster);
+  const db = await getDB()
+  return db.put('clusters', cluster)
 }
 
 export async function getAllClusters(): Promise<FaceCluster[]> {
-  const db = await getDB();
-  return db.getAll('clusters');
+  const db = await getDB()
+  return db.getAll('clusters')
 }
 
 export async function updateClusterLabel(id: string, label: string) {
-  const db = await getDB();
-  const cluster = await db.get('clusters', id);
+  const db = await getDB()
+  const cluster = await db.get('clusters', id)
   if (cluster) {
-    cluster.label = label;
-    return db.put('clusters', cluster);
+    cluster.label = label
+    return db.put('clusters', cluster)
   }
 }
 
 export async function clearExisitingData() {
-  console.log('Clearing existing data...');
-  const db = await getDB();
-  await db.clear('photos');
-  await db.clear('sessions');
-  await db.clear('clusters');
-  console.log('Existing data cleared.');
+  console.log('Clearing existing data...')
+  const db = await getDB()
+  await db.clear('photos')
+  await db.clear('sessions')
+  await db.clear('clusters')
+  console.log('Existing data cleared.')
 }
 
 export async function getLastSession(): Promise<ProcessingSession | undefined> {
-  const db = await getDB();
-  const sessions = await db.getAll('sessions');
-  if (sessions.length === 0) return undefined;
+  const db = await getDB()
+  const sessions = await db.getAll('sessions')
+  if (sessions.length === 0) return undefined
   return sessions.reduce((latest, current) => {
-    return (latest.updatedAt > current.updatedAt) ? latest : current;
-  });
+    return latest.updatedAt > current.updatedAt ? latest : current
+  })
 }

@@ -160,6 +160,34 @@ const onImportFile = async (event: Event) => {
   }
   reader.readAsText(file) // Read as text for JSON parsing
 }
+
+// Thumbnail handling for confirmed step
+const blobUrls = ref(new Map<string, string>())
+
+const getThumbnailUrl = (photo: Photo): string => {
+  if (!photo.thumbnail) return ''
+  const existing = blobUrls.value.get(photo.id)
+  if (existing) return existing
+  const url = URL.createObjectURL(photo.thumbnail)
+  blobUrls.value.set(photo.id, url)
+  return url
+}
+
+// Clean up blob URLs when component unmounts or when leaving confirmed step
+watch(step, (newStep) => {
+  if (newStep !== 'confirmed') {
+    for (const url of blobUrls.value.values()) {
+      URL.revokeObjectURL(url)
+    }
+    blobUrls.value.clear()
+  }
+})
+
+onBeforeUnmount(() => {
+  for (const url of blobUrls.value.values()) {
+    URL.revokeObjectURL(url)
+  }
+})
 </script>
 
 <template>
@@ -320,8 +348,16 @@ const onImportFile = async (event: Event) => {
             :key="photo.id"
             class="border rounded-lg overflow-hidden"
           >
-            <div class="aspect-video bg-gray-100 flex items-center justify-center">
-              <span class="text-gray-500 text-xs p-2 text-center truncate">{{ photo.name }}</span>
+            <div class="aspect-video bg-gray-100 flex items-center justify-center overflow-hidden">
+              <img
+                v-if="getThumbnailUrl(photo)"
+                :src="getThumbnailUrl(photo)"
+                :alt="photo.name"
+                class="w-full h-full object-cover"
+              />
+              <span v-else class="text-gray-500 text-xs p-2 text-center truncate">{{
+                photo.name
+              }}</span>
             </div>
             <div class="p-2 text-xs text-gray-600 bg-white truncate">
               {{ photo.dateStr }}

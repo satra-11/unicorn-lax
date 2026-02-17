@@ -5,7 +5,7 @@ import FaceClusterSelector from '~/components/FaceClusterSelector.vue'
 import AlbumPreview from '~/components/AlbumPreview.vue'
 import type { FaceCluster, Photo } from '~/utils/types'
 import { selectGroupBalancedPhotos, selectGrowthPhotos } from '~/utils/selection-algorithm'
-import { clearExisitingData, getLastSession, exportDatabase, importDatabase } from '~/utils/db'
+import { clearExisitingData, clearPhotos, getLastSession, exportDatabase, importDatabase } from '~/utils/db'
 
 const { isProcessing, progress, total, currentSession } = usePhotoProcessor()
 const step = ref<'upload' | 'select-faces' | 'review' | 'confirmed'>('upload')
@@ -93,6 +93,13 @@ const confirmSelection = () => {
 const onResetDb = async () => {
   if (confirm('全てのデータを消去しますか？この操作は取り消せません。')) {
     await clearExisitingData()
+    window.location.reload()
+  }
+}
+
+const onClearPhotos = async () => {
+  if (confirm('写真データのみを削除しますか？\n分類設定（クラスター）は保持されますが、画像は再スキャンが必要になります。')) {
+    await clearPhotos()
     window.location.reload()
   }
 }
@@ -200,7 +207,10 @@ const onImportFile = async (event: Event) => {
               />
             </button>
 
-            <button class="px-3 py-1.5 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors ml-auto" @click="onResetDb">
+            <button class="px-3 py-1.5 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors ml-auto" @click="onClearPhotos">
+              写真のみ削除
+            </button>
+            <button class="px-3 py-1.5 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors" @click="onResetDb">
               データを初期化 (Reset DB)
             </button>
           </div>

@@ -114,6 +114,32 @@ export async function clearExisitingData() {
   console.log('Existing data cleared.')
 }
 
+export async function clearPhotos() {
+  console.log('Clearing photos only...')
+  const db = await getDB()
+  
+  // 1. Clear Photo and Session stores
+  await db.clear('photos')
+  await db.clear('sessions')
+  
+  // 2. Clear photo references from Clusters
+  // We want to keep the clusters (labels, centroids, config) but remove the linked photos
+  // so they can be re-classified / re-added.
+  const clusters = await db.getAll('clusters')
+  const tx = db.transaction('clusters', 'readwrite')
+  const store = tx.objectStore('clusters')
+  
+  await Promise.all(clusters.map(cluster => {
+    // Reset photo lists
+    cluster.photoIds = []
+    cluster.confirmedPhotoIds = []
+    return store.put(cluster)
+  }))
+  
+  await tx.done
+  console.log('Photos, sessions cleared and cluster references reset.')
+}
+
 export async function getLastSession(): Promise<ProcessingSession | undefined> {
   const db = await getDB()
   const sessions = await db.getAll('sessions')

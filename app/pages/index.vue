@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, watch, computed, onMounted } from 'vue'
+import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue'
 import { usePhotoProcessor } from '~/composables/usePhotoProcessor'
 import FaceClusterSelector from '~/components/FaceClusterSelector.vue'
 import AlbumPreview from '~/components/AlbumPreview.vue'
 import type { FaceCluster, Photo } from '~/utils/types'
 import { selectGroupBalancedPhotos, selectGrowthPhotos } from '~/utils/selection-algorithm'
-import { clearExisitingData, getLastSession } from '~/utils/db'
+import { clearExisitingData, getLastSession, exportDatabase, importDatabase } from '~/utils/db'
 
 const { isProcessing, progress, total, currentSession } = usePhotoProcessor()
 const step = ref<'upload' | 'select-faces' | 'review' | 'confirmed'>('upload')
@@ -14,9 +14,32 @@ const generatedPhotos = ref<Photo[]>([])
 const mode = ref<'group' | 'growth'>('group')
 const targetCount = ref(50)
 const isSelecting = ref(false)
+const fileInput = ref<HTMLInputElement | null>(null)
 
-// Watch for processing completion to move to next step
-// Watch for processing completion to move to next step
+// Prevent accidental tab close
+const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+  e.preventDefault()
+  e.returnValue = ''
+}
+
+onMounted(async () => {
+  window.addEventListener('beforeunload', handleBeforeUnload)
+  try {
+    const lastSession = await getLastSession()
+    if (lastSession && lastSession.status === 'completed') {
+      console.log('Restoring last session:', lastSession.id)
+      currentSession.value = lastSession
+      step.value = 'select-faces'
+    }
+  } catch (e) {
+    console.error('Failed to restore session:', e)
+  }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+})
+
 watch(
   () => currentSession.value?.status,
   (newStatus) => {
@@ -25,20 +48,6 @@ watch(
     }
   },
 )
-
-onMounted(async () => {
-  try {
-    const lastSession = await getLastSession()
-    if (lastSession && lastSession.status === 'completed') {
-      console.log('Restoring last session:', lastSession.id)
-      // We need to set it in the composable so it's shared/reactive
-      currentSession.value = lastSession
-      step.value = 'select-faces'
-    }
-  } catch (e) {
-    console.error('Failed to restore session:', e)
-  }
-})
 
 const onFacesSelected = (clusters: FaceCluster[]) => {
   selectedClusters.value = clusters
@@ -87,6 +96,53 @@ const onResetDb = async () => {
     window.location.reload()
   }
 }
+
+const onExport = async () => {
+  try {
+    const json = await exportDatabase()
+    const blob = new Blob([json], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `unicorn-lax-backup-${new Date().toISOString().split('T')[0]}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  } catch (e) {
+    console.error('Export failed:', e)
+    alert('エクスポートに失敗しました。')
+  }
+}
+
+const triggerImport = () => {
+  fileInput.value?.click()
+}
+
+const onImportFile = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+
+  if (!confirm('現在のデータをすべて上書きしてインポートしますか？この操作は取り消せません。')) {
+    target.value = '' // reset
+    return
+  }
+
+  const reader = new FileReader()
+  reader.onload = async (e) => {
+    try {
+      const json = e.target?.result as string
+      await importDatabase(json)
+      alert('インポートが完了しました。ページをリロードします。')
+      window.location.reload()
+    } catch (error) {
+      console.error('Import failed:', error)
+      alert('インポートに失敗しました。ファイル形式を確認してください。')
+    }
+  }
+  reader.readAsText(file) // Read as text for JSON parsing
+}
 </script>
 
 <template>
@@ -116,10 +172,38 @@ const onResetDb = async () => {
         </div>
 
         <PhotoUploader :current-session-id="currentSession?.id" />
-        <div class="mt-4 flex justify-end">
-          <button class="text-sm text-red-500 hover:underline" @click="onResetDb">
-            Reset Database
-          </button>
+        
+        <!-- Backup / Restore / Reset Actions -->
+        <div class="mt-8 pt-4 border-t border-gray-100">
+          <h3 class="text-sm font-semibold text-gray-500 mb-3">データ管理</h3>
+          <div class="flex justify-end gap-3 flex-wrap">
+             <button 
+              class="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors flex items-center gap-2"
+              @click="onExport"
+            >
+              <span class="i-lucide-download w-4 h-4" />
+              バックアップを作成 (Export)
+            </button>
+            
+            <button 
+              class="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors flex items-center gap-2 relative"
+              @click="triggerImport"
+            >
+              <span class="i-lucide-upload w-4 h-4" />
+              バックアップから復元 (Import)
+              <input 
+                ref="fileInput"
+                type="file" 
+                accept=".json" 
+                class="hidden" 
+                @change="onImportFile"
+              />
+            </button>
+
+            <button class="px-3 py-1.5 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors ml-auto" @click="onResetDb">
+              データを初期化 (Reset DB)
+            </button>
+          </div>
         </div>
       </div>
 

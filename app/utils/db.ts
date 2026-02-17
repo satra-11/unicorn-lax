@@ -122,3 +122,179 @@ export async function getLastSession(): Promise<ProcessingSession | undefined> {
     return latest.updatedAt > current.updatedAt ? latest : current
   })
 }
+
+// --- Backup & Restore Helpers ---
+
+const blobToBase64 = (blob: Blob): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const result = reader.result as string
+      // Ensure we have a data URL
+      if (result.startsWith('data:')) {
+        resolve(result)
+      } else {
+        reject(new Error('Failed to convert blob to base64 data URL'))
+      }
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
+}
+
+const base64ToBlob = async (dataUrl: string): Promise<Blob> => {
+  // Use fetch if available as it is usually fastest for Data URLs, but fallback or manual parse if needed.
+  // Manual parse is robust for ensuring we get the type right if fetch behaves oddly.
+  try {
+    const arr = dataUrl.split(',')
+    if (arr.length < 2) throw new Error('Invalid data URL')
+    
+    const mimeMatch = (arr[0] as string).match(/:(.*?);/)
+    const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream'
+    
+    const bstr = atob(arr[1] || '')
+    let n = bstr.length
+    const u8arr = new Uint8Array(n)
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n)
+    }
+    return new Blob([u8arr], { type: mime })
+  } catch (e) {
+    console.warn('Manual base64 conversion failed, trying fetch', e)
+    const res = await fetch(dataUrl)
+    return res.blob()
+  }
+}
+
+export async function exportDatabase() {
+  const db = await getDB()
+  const photos = await db.getAll('photos')
+  const sessions = await db.getAll('sessions')
+  const clusters = await db.getAll('clusters')
+
+  // Serialize Photos: Convert Blobs to Base64
+  const serializedPhotos = await Promise.all(
+    photos.map(async (p) => {
+      let thumbnailBase64 = undefined
+      if (p.thumbnail) {
+        thumbnailBase64 = await blobToBase64(p.thumbnail)
+      }
+      
+      // Serialize face thumbnails if they exist
+      let faces = undefined
+      if (p.faces) {
+          faces = await Promise.all(p.faces.map(async (f) => {
+              let fThumb = undefined
+              if (f.thumbnail) {
+                  fThumb = await blobToBase64(f.thumbnail)
+              }
+              return {
+                  ...f,
+                  descriptor: Array.from(f.descriptor),
+                  thumbnail: fThumb
+              }
+          }))
+      }
+
+      return {
+        ...p,
+        thumbnail: thumbnailBase64,
+        faces: faces
+      }
+    }),
+  )
+
+  // Serialize Clusters: Convert TypedArrays to regular arrays for JSON
+  const serializedClusters = await Promise.all(
+    clusters.map(async (c) => {
+      let thumbnailBase64 = undefined
+      if (c.thumbnail) {
+        thumbnailBase64 = await blobToBase64(c.thumbnail)
+      }
+      return {
+        ...c,
+        descriptor: Array.from(c.descriptor), // Float32Array -> Array
+        thumbnail: thumbnailBase64,
+      }
+    }),
+  )
+
+  const data = {
+    version: 1,
+    timestamp: Date.now(),
+    photos: serializedPhotos,
+    sessions,
+    clusters: serializedClusters,
+  }
+
+  return JSON.stringify(data)
+}
+
+export async function importDatabase(jsonString: string) {
+  try {
+    const data = JSON.parse(jsonString)
+    if (!data.version || !data.photos || !data.sessions || !data.clusters) {
+      throw new Error('Invalid backup file format')
+    }
+
+    await clearExisitingData()
+    const db = await getDB()
+
+    // Restore Sessions
+    for (const session of data.sessions) {
+      await db.put('sessions', session)
+    }
+
+    // Restore Photos
+    for (const p of data.photos) {
+      let thumbnailBlob = undefined
+      if (typeof p.thumbnail === 'string') {
+        thumbnailBlob = await base64ToBlob(p.thumbnail)
+      }
+      
+      let faces = undefined
+      if (Array.isArray(p.faces)) {
+        faces = await Promise.all(p.faces.map(async (f: any) => {
+            let fThumb = undefined
+            if (typeof f.thumbnail === 'string') {
+                fThumb = await base64ToBlob(f.thumbnail)
+            }
+            return {
+                ...f,
+                descriptor: f.descriptor ? new Float32Array(f.descriptor) : undefined,
+                thumbnail: fThumb
+            }
+        }))
+      }
+      
+      const restoredPhoto: any = {
+        ...p,
+        thumbnail: thumbnailBlob,
+        faces: faces
+      }
+
+      await db.put('photos', restoredPhoto)
+    }
+
+    // Restore Clusters
+    for (const c of data.clusters) {
+      let thumbnailBlob = undefined
+      if (typeof c.thumbnail === 'string') {
+        thumbnailBlob = await base64ToBlob(c.thumbnail)
+      }
+      
+      const restoredCluster = {
+        ...c,
+        descriptor: new Float32Array(c.descriptor),
+        thumbnail: thumbnailBlob,
+      }
+      await db.put('clusters', restoredCluster)
+    }
+    
+    console.log('Database imported successfully')
+    return true
+  } catch (e) {
+    console.error('Import failed:', e)
+    throw e
+  }
+}

@@ -1,6 +1,7 @@
 import type { Photo, FaceCluster } from './types';
 import { getDB } from './db';
 import { CLUSTER_THRESHOLD } from './clustering';
+import { deduplicateBurstPhotos } from './burst-detection';
 import * as faceapi from 'face-api.js';
 
 interface ScoredPhoto {
@@ -48,9 +49,10 @@ export async function selectGroupBalancedPhotos(
   const db = await getDB();
   const allPhotos = await db.getAllFromIndex('photos', 'by-session', sessionId);
 
-  // Score photos based on balance (how many target subjects are in them)
-  // Higher score = more target subjects
-  const scoredPhotos = buildScoredPhotos(allPhotos, targetClusters);
+  // Deduplicate burst photos before scoring
+  const deduplicated = deduplicateBurstPhotos(allPhotos, targetClusters);
+
+  const scoredPhotos = buildScoredPhotos(deduplicated, targetClusters);
 
   if (scoredPhotos.length === 0) return [];
 
@@ -129,7 +131,10 @@ export async function selectGrowthPhotos(
   const db = await getDB();
   const allPhotos = await db.getAllFromIndex('photos', 'by-session', sessionId);
 
-  const scoredPhotos = buildScoredPhotos(allPhotos, [targetCluster]);
+  // Deduplicate burst photos before scoring
+  const deduplicated = deduplicateBurstPhotos(allPhotos, [targetCluster]);
+
+  const scoredPhotos = buildScoredPhotos(deduplicated, [targetCluster]);
 
   scoredPhotos.sort((a, b) => a.photo.timestamp - b.photo.timestamp);
 

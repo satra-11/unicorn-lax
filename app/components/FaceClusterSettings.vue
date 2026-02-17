@@ -4,6 +4,9 @@ import type { FaceCluster, Photo } from '~/utils/types'
 import { recalculateClusterCentroid } from '~/utils/clustering'
 import { getPhoto, saveCluster, getPhotosBySession } from '~/utils/db'
 
+// Move Logic
+import { movePhotoToCluster } from '~/utils/clustering'
+
 const props = defineProps<{
   cluster: FaceCluster
   sessionId: string
@@ -116,9 +119,6 @@ const toggleConfirm = (photoId: string) => {
   }
 }
 
-// Move Logic
-import { movePhotoToCluster } from '~/utils/clustering'
-
 const moveTargetPhoto = ref<Photo | null>(null)
 const showMoveModal = ref(false)
 
@@ -129,15 +129,15 @@ const openMoveModal = (photo: Photo) => {
 
 const handleMove = async (targetClusterId: string) => {
   if (!moveTargetPhoto.value) return
-  
+
   isLoading.value = true
   try {
     await movePhotoToCluster(moveTargetPhoto.value.id, props.cluster.id, targetClusterId)
-    
+
     // Remove from local list immediately
-    photos.value = photos.value.filter(p => p.id !== moveTargetPhoto.value?.id)
+    photos.value = photos.value.filter((p) => p.id !== moveTargetPhoto.value?.id)
     confirmedIds.value.delete(moveTargetPhoto.value.id) // Cleanup if it was confirmed
-    
+
     emit('update') // Parent refresh might be needed if centroids changed enough to affect other things, but mainly just to signal change.
     showMoveModal.value = false
     moveTargetPhoto.value = null
@@ -151,9 +151,8 @@ const handleMove = async (targetClusterId: string) => {
 
 // Filter out current cluster from options
 const targetClusters = computed(() => {
-  return props.allClusters.filter(c => c.id !== props.cluster.id)
+  return props.allClusters.filter((c) => c.id !== props.cluster.id)
 })
-
 
 const getPhotoUrl = (photo: Photo) => {
   // If we have a thumbnail blob, use it
@@ -272,8 +271,8 @@ const getPhotoUrl = (photo: Photo) => {
                 <button
                   v-if="!isUnrecognized"
                   class="absolute top-1 left-1 bg-white/90 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20 hover:bg-white hover:text-blue-600 shadow-sm"
-                  @click.stop="openMoveModal(photo)"
                   title="Move to another person"
+                  @click.stop="openMoveModal(photo)"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -290,7 +289,6 @@ const getPhotoUrl = (photo: Photo) => {
                     />
                   </svg>
                 </button>
-
 
                 <!-- Selection Border Overlay -->
                 <div
@@ -345,11 +343,14 @@ const getPhotoUrl = (photo: Photo) => {
       v-if="showMoveModal && moveTargetPhoto"
       class="fixed inset-0 z-[10000] flex items-center justify-center p-4"
     >
-      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showMoveModal = false"></div>
+      <div
+        class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        @click="showMoveModal = false"
+      ></div>
       <div class="relative bg-white rounded-lg shadow-xl max-w-sm w-full p-6 z-10">
         <h3 class="text-lg font-bold text-gray-900 mb-4">別の人物へ移動</h3>
         <p class="text-sm text-gray-600 mb-4">
-          選択した写真を別の人物グループへ移動します。<br/>
+          選択した写真を別の人物グループへ移動します。<br />
           移動後、両方のグループで顔モデルが再学習されます。
         </p>
 
@@ -361,8 +362,8 @@ const getPhotoUrl = (photo: Photo) => {
             @click="handleMove(target.id)"
           >
             <div class="w-6 h-6 bg-gray-200 rounded-full overflow-hidden flex-shrink-0">
-               <!-- Simple thumbnail for target -->
-               <!-- Using a reliable way to get thumbnail URL without complexity here, maybe skip or reuse helper if available in scope. We don't have helper easily accessible in loop context without wrapper, but let's try just label. -->
+              <!-- Simple thumbnail for target -->
+              <!-- Using a reliable way to get thumbnail URL without complexity here, maybe skip or reuse helper if available in scope. We don't have helper easily accessible in loop context without wrapper, but let's try just label. -->
             </div>
             <span class="truncate font-medium">{{ target.label }}</span>
           </button>

@@ -5,7 +5,13 @@ import FaceClusterSelector from '~/components/FaceClusterSelector.vue'
 import AlbumPreview from '~/components/AlbumPreview.vue'
 import type { FaceCluster, Photo } from '~/utils/types'
 import { selectGroupBalancedPhotos, selectGrowthPhotos } from '~/utils/selection-algorithm'
-import { clearExistingData, clearPhotos, getLastSession, exportDatabase, importDatabase } from '~/utils/db'
+import {
+  clearExistingData,
+  clearPhotos,
+  getLastSession,
+  exportDatabase,
+  importDatabase,
+} from '~/utils/db'
 
 const { isProcessing, progress, total, currentSession } = usePhotoProcessor()
 const step = ref<'upload' | 'select-faces' | 'review' | 'confirmed'>('upload')
@@ -98,7 +104,11 @@ const onResetDb = async () => {
 }
 
 const onClearPhotos = async () => {
-  if (confirm('写真データのみを削除しますか？\n分類設定（クラスター）は保持されますが、画像は再スキャンが必要になります。')) {
+  if (
+    confirm(
+      '写真データのみを削除しますか？\n分類設定（クラスター）は保持されますが、画像は再スキャンが必要になります。',
+    )
+  ) {
     await clearPhotos()
     window.location.reload()
   }
@@ -179,38 +189,44 @@ const onImportFile = async (event: Event) => {
         </div>
 
         <PhotoUploader :current-session-id="currentSession?.id" />
-        
+
         <!-- Backup / Restore / Reset Actions -->
         <div class="mt-8 pt-4 border-t border-gray-100">
           <h3 class="text-sm font-semibold text-gray-500 mb-3">データ管理</h3>
           <div class="flex justify-end gap-3 flex-wrap">
-             <button 
+            <button
               class="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors flex items-center gap-2"
               @click="onExport"
             >
               <span class="i-lucide-download w-4 h-4" />
               バックアップを作成 (Export)
             </button>
-            
-            <button 
+
+            <button
               class="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors flex items-center gap-2 relative"
               @click="triggerImport"
             >
               <span class="i-lucide-upload w-4 h-4" />
               バックアップから復元 (Import)
-              <input 
+              <input
                 ref="fileInput"
-                type="file" 
-                accept=".json" 
-                class="hidden" 
+                type="file"
+                accept=".json"
+                class="hidden"
                 @change="onImportFile"
               />
             </button>
 
-            <button class="px-3 py-1.5 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors ml-auto" @click="onClearPhotos">
+            <button
+              class="px-3 py-1.5 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors ml-auto"
+              @click="onClearPhotos"
+            >
               写真のみ削除
             </button>
-            <button class="px-3 py-1.5 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors" @click="onResetDb">
+            <button
+              class="px-3 py-1.5 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors"
+              @click="onResetDb"
+            >
               データを初期化 (Reset DB)
             </button>
           </div>

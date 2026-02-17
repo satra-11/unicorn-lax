@@ -163,7 +163,7 @@ export const usePhotoProcessor = () => {
     for (let i = 0; i < fileArray.length; i += BATCH_SIZE) {
       const batch = fileArray.slice(i, i + BATCH_SIZE)
       await Promise.all(
-         batch.map(async (file) => {
+        batch.map(async (file) => {
           try {
             const hash = await calculateHash(file)
 

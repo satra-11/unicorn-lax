@@ -208,9 +208,9 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
       :cluster="settingsCluster"
       :session-id="props.session.id"
       :is-open="showSettings"
+      :all-clusters="clusters"
       @close="showSettings = false"
       @update="handleSettingsUpdate"
-      :all-clusters="clusters"
     />
   </div>
 </template>

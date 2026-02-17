@@ -18,11 +18,11 @@ describe('clustering', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    // @ts-ignore
+    // @ts-expect-error
     db.getDB.mockResolvedValue(mockDB)
-    // @ts-ignore
+    // @ts-expect-error
     db.getAllClusters.mockResolvedValue([])
-    // @ts-ignore
+    // @ts-expect-error
     db.saveCluster.mockResolvedValue(undefined)
   })
 
@@ -35,7 +35,7 @@ describe('clustering', () => {
 
       // Mock euclideanDistance
       vi.mocked(faceapi.euclideanDistance).mockImplementation((d1, d2) => {
-        // @ts-ignore
+        // @ts-expect-error
         return Math.abs(d1[0] - d2[0])
       })
 
@@ -57,7 +57,7 @@ describe('clustering', () => {
 
       mockDB.getAllFromIndex.mockResolvedValue([p1, p2])
       vi.mocked(faceapi.euclideanDistance).mockImplementation((d1, d2) => {
-        // @ts-ignore
+        // @ts-expect-error
         return Math.abs(d1[0] - d2[0])
       })
 
@@ -78,14 +78,14 @@ describe('clustering', () => {
         photoIds: ['old1'],
         config: { similarityThreshold: 0.4 },
       }
-      // @ts-ignore
+      // @ts-expect-error
       db.getAllClusters.mockResolvedValue([existingCluster])
 
       const p1 = { id: 'p1', faces: [{ descriptor: [0.15], box: {} }] } as any
 
       mockDB.getAllFromIndex.mockResolvedValue([p1])
       vi.mocked(faceapi.euclideanDistance).mockImplementation((d1, d2) => {
-        // @ts-ignore
+        // @ts-expect-error
         return Math.abs(d1[0] - d2[0])
       })
 

@@ -104,10 +104,9 @@ export async function clusterFaces(sessionId: string): Promise<FaceCluster[]> {
       if (trainedClusters.length > 0) {
         const distances = trainedClusters.map((c) => ({
           label: c.label,
-          distance: faceapi.euclideanDistance(
-            Array.from(face.descriptor),
-            Array.from(c.descriptor),
-          ).toFixed(3),
+          distance: faceapi
+            .euclideanDistance(Array.from(face.descriptor), Array.from(c.descriptor))
+            .toFixed(3),
           threshold: (c.config?.similarityThreshold ?? CLUSTER_THRESHOLD).toFixed(2),
         }))
         console.log(`[Cluster] No match for face in photo ${face.photoId}:`, distances)
@@ -137,12 +136,10 @@ export async function clusterFaces(sessionId: string): Promise<FaceCluster[]> {
   // 1. Clusters with at least one photo from THIS session (auto-matched or manually assigned)
   // 2. User-trained clusters (custom-named, non-default label) — shown even with 0 photos
   //    so users can manually move photos into them after re-upload
-  const isUserTrained = (c: FaceCluster) =>
-    c.label && !/^Person \d+$/.test(c.label)
+  const isUserTrained = (c: FaceCluster) => c.label && !/^Person \d+$/.test(c.label)
 
   const relevantClusters = clusters.filter(
-    (c) =>
-      c.photoIds.some((pid) => sessionPhotoIds.has(pid)) || isUserTrained(c),
+    (c) => c.photoIds.some((pid) => sessionPhotoIds.has(pid)) || isUserTrained(c),
   )
 
   return relevantClusters
@@ -182,7 +179,6 @@ export async function recalculateClusterCentroid(clusterId: string): Promise<voi
       : cluster.photoIds
 
   if (targetPhotoIds.length === 0) return
-
 
   // Use cluster-specific threshold (Fix: was using hardcoded CLUSTER_THRESHOLD)
   const threshold = cluster.config?.similarityThreshold ?? CLUSTER_THRESHOLD
@@ -250,10 +246,7 @@ export async function recalculateClusterCentroid(clusterId: string): Promise<voi
     let bestDist = Infinity
 
     for (const desc of pf.descriptors) {
-      const dist = faceapi.euclideanDistance(
-        Array.from(desc),
-        Array.from(referenceCentroid),
-      )
+      const dist = faceapi.euclideanDistance(Array.from(desc), Array.from(referenceCentroid))
       if (dist < threshold && dist < bestDist) {
         bestDist = dist
         bestFaceDesc = desc
@@ -372,5 +365,7 @@ export async function movePhotoToCluster(
   await recalculateClusterCentroid(source.id)
   await recalculateClusterCentroid(target.id)
 
-  console.log(`[Cluster] Moved photo ${photoId} from ${source.label} to ${target.label} and updated centroids.`)
+  console.log(
+    `[Cluster] Moved photo ${photoId} from ${source.label} to ${target.label} and updated centroids.`,
+  )
 }

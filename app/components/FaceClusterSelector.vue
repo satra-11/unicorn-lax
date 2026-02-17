@@ -152,7 +152,6 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
             <span v-else class="text-gray-400 text-xs">No Img</span>
           </div>
           <div class="p-2 text-center">
-            <!-- Inline label editing -->
             <div v-if="editingClusterId === cluster.id" @click.stop>
               <input
                 :ref="setEditInputRef"
@@ -169,9 +168,8 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
               @click.stop="startEditing(cluster)"
             >
               <span class="text-xs font-medium truncate">{{ cluster.label }}</span>
-              <span class="text-gray-400 text-[10px]">✏️</span>
             </div>
-            <div class="text-[10px] text-gray-400 mt-0.5">{{ cluster.photoIds.length }} 枚</div>
+            <div class="text-[12px] text-gray-400 mt-0.5">{{ cluster.photoIds.length }} 枚</div>
           </div>
         </div>
 

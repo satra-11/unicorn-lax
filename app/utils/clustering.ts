@@ -13,7 +13,7 @@ export async function clusterFaces(sessionId: string): Promise<FaceCluster[]> {
   const photos = await db.getAllFromIndex('photos', 'by-session', sessionId)
 
   // 1. Load previously saved clusters
-  let clusters = await getAllClusters()
+  const clusters = await getAllClusters()
 
   // 2. Identify all photo IDs in the current session
   const sessionPhotoIds = new Set(photos.map((p) => p.id))

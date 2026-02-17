@@ -3,7 +3,7 @@ import { selectGroupBalancedPhotos, selectGrowthPhotos } from './selection-algor
 import * as db from './db'
 import * as burstDetection from './burst-detection'
 import * as faceapi from 'face-api.js'
-import type { Photo, FaceCluster } from './types'
+// import type { Photo, FaceCluster } from './types'
 
 // Mock dependencies
 vi.mock('./db')

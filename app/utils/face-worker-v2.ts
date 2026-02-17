@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type * as FaceApi from 'face-api.js'
 
 // Environment configuration

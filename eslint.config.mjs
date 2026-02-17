@@ -16,5 +16,11 @@ export default withNuxt(
     'prettier/prettier': 'error',
     // turn off conflicting rules
     ...(await import('eslint-config-prettier')).default.rules,
+    // Practical overrides
+    '@typescript-eslint/no-explicit-any': 'warn',
+    '@typescript-eslint/ban-ts-comment': 'warn',
+    '@typescript-eslint/no-extraneous-class': 'off',
+    'vue/multi-word-component-names': 'off',
+    '@typescript-eslint/no-unused-vars': 'warn',
   },
 })

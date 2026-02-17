@@ -40,8 +40,8 @@ const onFolderSelect = async (event: Event) => {
               name="faceModel"
               value="ssd"
               :checked="faceModel === 'ssd'"
-              @change="setFaceModel('ssd')"
               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+              @change="setFaceModel('ssd')"
             />
             <div class="ml-3">
               <div class="text-sm font-medium text-gray-900">高精度 (SSD MobileNet V1)</div>
@@ -58,8 +58,8 @@ const onFolderSelect = async (event: Event) => {
               name="faceModel"
               value="tiny"
               :checked="faceModel === 'tiny'"
-              @change="setFaceModel('tiny')"
               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+              @change="setFaceModel('tiny')"
             />
             <div class="ml-3">
               <div class="text-sm font-medium text-gray-900">高速 (Tiny Face Detector)</div>

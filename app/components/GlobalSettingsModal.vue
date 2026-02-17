@@ -31,8 +31,8 @@ const selectModel = (model: 'ssd' | 'tiny') => {
         <div class="flex justify-between items-center p-6 border-b bg-gray-50">
           <h2 class="text-xl font-bold text-gray-900">設定 (Settings)</h2>
           <button
-            @click="$emit('close')"
             class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-200 transition-colors"
+            @click="$emit('close')"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -64,13 +64,13 @@ const selectModel = (model: 'ssd' | 'tiny') => {
             <div class="grid grid-cols-1 gap-4">
               <!-- SSD MobileNet V1 -->
               <div
-                @click="selectModel('ssd')"
                 class="relative border rounded-lg p-4 cursor-pointer transition-all hover:bg-gray-50 flex items-start gap-3"
                 :class="
                   faceModel === 'ssd'
                     ? 'border-blue-500 ring-1 ring-blue-500 bg-blue-50/50'
                     : 'border-gray-200'
                 "
+                @click="selectModel('ssd')"
               >
                 <div class="mt-0.5">
                   <div
@@ -94,13 +94,13 @@ const selectModel = (model: 'ssd' | 'tiny') => {
 
               <!-- Tiny Face Detector -->
               <div
-                @click="selectModel('tiny')"
                 class="relative border rounded-lg p-4 cursor-pointer transition-all hover:bg-gray-50 flex items-start gap-3"
                 :class="
                   faceModel === 'tiny'
                     ? 'border-blue-500 ring-1 ring-blue-500 bg-blue-50/50'
                     : 'border-gray-200'
                 "
+                @click="selectModel('tiny')"
               >
                 <div class="mt-0.5">
                   <div
@@ -126,8 +126,8 @@ const selectModel = (model: 'ssd' | 'tiny') => {
 
         <div class="p-6 border-t bg-gray-50 flex justify-end">
           <button
-            @click="$emit('close')"
             class="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-md hover:bg-black transition-colors shadow-sm"
+            @click="$emit('close')"
           >
             閉じる
           </button>

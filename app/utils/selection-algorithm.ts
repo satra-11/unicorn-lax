@@ -70,7 +70,7 @@ export async function selectGroupBalancedPhotos(
   targetClusters.forEach((c) => subjectCounts.set(c.id, 0))
 
   // Clone matched array to pick from
-  let pool = [...matched]
+  const pool = [...matched]
 
   for (let i = 0; i < count; i++) {
     if (pool.length === 0) break

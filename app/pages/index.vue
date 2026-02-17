@@ -108,8 +108,8 @@ const onResetDb = async () => {
             <p class="text-sm text-blue-700">{{ currentSession.totalFiles }} 枚の写真を分析済み</p>
           </div>
           <button
-            @click="step = 'select-faces'"
             class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold shadow-sm transition-colors"
+            @click="step = 'select-faces'"
           >
             人物選択へ進む →
           </button>
@@ -117,7 +117,7 @@ const onResetDb = async () => {
 
         <PhotoUploader :current-session-id="currentSession?.id" />
         <div class="mt-4 flex justify-end">
-          <button @click="onResetDb" class="text-sm text-red-500 hover:underline">
+          <button class="text-sm text-red-500 hover:underline" @click="onResetDb">
             Reset Database
           </button>
         </div>
@@ -130,7 +130,7 @@ const onResetDb = async () => {
       >
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-bold text-black">対象の人物を選択</h2>
-          <button @click="step = 'upload'" class="text-sm text-blue-600 hover:underline">
+          <button class="text-sm text-blue-600 hover:underline" @click="step = 'upload'">
             ← 写真を追加 / アップロード画面へ
           </button>
         </div>
@@ -161,9 +161,9 @@ const onResetDb = async () => {
 
         <div class="mt-6 flex justify-end">
           <button
-            @click="generateAlbum"
             :disabled="selectedClusters.length === 0 || isSelecting"
             class="px-6 py-2 bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
+            @click="generateAlbum"
           >
             {{ isSelecting ? '生成中...' : 'アルバム候補を生成' }}
           </button>
@@ -181,14 +181,14 @@ const onResetDb = async () => {
 
         <div class="mt-6 flex justify-between items-center">
           <button
-            @click="step = 'select-faces'"
             class="px-4 py-2 border rounded text-gray-700 hover:bg-gray-50"
+            @click="step = 'select-faces'"
           >
             戻る
           </button>
           <button
-            @click="confirmSelection"
             class="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            @click="confirmSelection"
           >
             選択を確定する ({{ confirmedPhotos.length }} 枚)
           </button>
@@ -217,8 +217,8 @@ const onResetDb = async () => {
 
         <div class="mt-6 flex justify-between gap-2">
           <button
-            @click="step = 'review'"
             class="px-4 py-2 border rounded text-gray-700 hover:bg-gray-50"
+            @click="step = 'review'"
           >
             確認画面に戻る
           </button>

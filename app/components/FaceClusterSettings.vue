@@ -11,8 +11,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'close'): void
-  (e: 'update'): void // When cluster updates
+  (e: 'close' | 'update'): void
 }>()
 
 const isLoading = ref(false)
@@ -145,8 +144,8 @@ const getPhotoUrl = (photo: Photo) => {
             {{ isUnrecognized ? '未検出の画像 (Unrecognized Photos)' : `編集: ${cluster.label}` }}
           </h2>
           <button
-            @click="$emit('close')"
             class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
+            @click="$emit('close')"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -192,9 +191,9 @@ const getPhotoUrl = (photo: Photo) => {
               </div>
               <button
                 v-if="!isUnrecognized"
-                @click="triggerRecalculate"
                 :disabled="isLoading"
                 class="px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                @click="triggerRecalculate"
               >
                 {{ isLoading ? '計算中...' : '顔モデルを更新' }}
               </button>
@@ -261,15 +260,15 @@ const getPhotoUrl = (photo: Photo) => {
 
         <div class="p-6 border-t bg-gray-50 flex justify-end gap-3 rounded-b-xl">
           <button
-            @click="$emit('close')"
             class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+            @click="$emit('close')"
           >
             {{ isUnrecognized ? '閉じる' : 'キャンセル' }}
           </button>
           <button
             v-if="!isUnrecognized"
-            @click="saveSettings"
             class="px-4 py-2 text-sm font-medium text-white bg-gray-900 border border-transparent rounded-md hover:bg-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 transition-colors shadow-sm"
+            @click="saveSettings"
           >
             設定を保存
           </button>

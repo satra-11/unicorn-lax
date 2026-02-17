@@ -210,8 +210,7 @@ onBeforeUnmount(() => {
             Unicorn Lax
           </h1>
           <p class="text-xl md:text-2xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-            大量の写真から、<span class="font-bold text-gray-800">「最高の瞬間」</span
-            >を自動で選定。<br />
+            思い出選びは、AIで<span class="font-bold text-gray-800">「楽（Lax）」</span>する。<br />
             プライバシー重視。すべての処理はブラウザ内で完結します。
           </p>
         </div>

@@ -25,43 +25,45 @@ const onFolderSelect = async (event: Event) => {
       <h2 class="text-xl font-bold mb-4 text-black">写真のアップロード</h2>
 
       <!-- Model Selection -->
-      <div class="mb-6 max-w-sm mx-auto text-left">
-        <label class="block text-sm font-medium text-gray-700 mb-2">顔検出モデル</label>
-        <div class="grid grid-cols-1 gap-2">
+      <div class="mb-6 max-w-md mx-auto text-left">
+        <div class="grid grid-cols-2 gap-3">
+          <!-- 🦄 Unicorn Mode -->
           <label
-            class="flex items-center p-3 border rounded-lg cursor-pointer transition-colors hover:bg-gray-50"
-            :class="faceModel === 'ssd' ? 'border-blue-500 bg-blue-50/30' : 'border-gray-200'"
+            class="model-card unicorn-card"
+            :class="{ 'model-card-active': faceModel === 'ssd' }"
           >
             <input
               type="radio"
               name="faceModel"
               value="ssd"
               :checked="faceModel === 'ssd'"
-              class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+              class="sr-only"
               @change="setFaceModel('ssd')"
             />
-            <div class="ml-3">
-              <div class="text-sm font-medium text-gray-900">高精度 (SSD MobileNet V1)</div>
-              <div class="text-xs text-gray-500">標準的な精度。推奨。</div>
-            </div>
+            <span class="model-card-badge unicorn-badge">推奨</span>
+            <div class="model-card-icon">🦄</div>
+            <div class="model-card-name">Unicorn</div>
+            <div class="model-card-label">高精度モード</div>
+            <div class="model-card-desc">精度を重視し、<br />ほとんどの写真に対応</div>
           </label>
 
+          <!-- 🐇 Rabbit Mode -->
           <label
-            class="flex items-center p-3 border rounded-lg cursor-pointer transition-colors hover:bg-gray-50"
-            :class="faceModel === 'tiny' ? 'border-blue-500 bg-blue-50/30' : 'border-gray-200'"
+            class="model-card rabbit-card"
+            :class="{ 'model-card-active': faceModel === 'tiny' }"
           >
             <input
               type="radio"
               name="faceModel"
               value="tiny"
               :checked="faceModel === 'tiny'"
-              class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+              class="sr-only"
               @change="setFaceModel('tiny')"
             />
-            <div class="ml-3">
-              <div class="text-sm font-medium text-gray-900">高速 (Tiny Face Detector)</div>
-              <div class="text-xs text-gray-500">精度は劣るが高速。</div>
-            </div>
+            <div class="model-card-icon">🐇</div>
+            <div class="model-card-name">Rabbit</div>
+            <div class="model-card-label">高速モード</div>
+            <div class="model-card-desc">スピード重視、<br />精度はやや控えめ</div>
           </label>
         </div>
       </div>
@@ -96,3 +98,89 @@ const onFolderSelect = async (event: Event) => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.model-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1.25rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 1rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  background: white;
+}
+
+.model-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* Unicorn card accent */
+.unicorn-card.model-card-active {
+  border-color: #a78bfa;
+  background: linear-gradient(135deg, #f5f3ff 0%, #fdf2f8 100%);
+  box-shadow: 0 4px 16px rgba(167, 139, 250, 0.2);
+}
+
+/* Rabbit card accent */
+.rabbit-card.model-card-active {
+  border-color: #fb923c;
+  background: linear-gradient(135deg, #fffbeb 0%, #fff7ed 100%);
+  box-shadow: 0 4px 16px rgba(251, 146, 60, 0.2);
+}
+
+.model-card-badge {
+  position: absolute;
+  top: -0.5rem;
+  right: -0.25rem;
+  padding: 0.125rem 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  letter-spacing: 0.025em;
+}
+
+.unicorn-badge {
+  background: linear-gradient(135deg, #a78bfa, #f472b6);
+  color: white;
+  box-shadow: 0 2px 8px rgba(167, 139, 250, 0.3);
+}
+
+.model-card-icon {
+  font-size: 2.25rem;
+  line-height: 1;
+  margin-bottom: 0.25rem;
+  transition: transform 0.25s ease;
+}
+
+.model-card:hover .model-card-icon {
+  transform: scale(1.15);
+}
+
+.model-card-name {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #1f2937;
+  letter-spacing: 0.025em;
+}
+
+.model-card-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #9ca3af;
+  margin-top: 0.125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.model-card-desc {
+  font-size: 0.7rem;
+  color: #6b7280;
+  margin-top: 0.5rem;
+  line-height: 1.4;
+}
+</style>

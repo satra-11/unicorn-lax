@@ -161,7 +161,7 @@ const getPhotoUrl = (photo: Photo) => {
         <div class="p-6 space-y-8 flex-1 overflow-y-auto">
           <!-- Label Editing -->
           <div v-if="!isUnrecognized">
-            <label class="block text-sm font-medium text-gray-700 mb-1">名前 (Label)</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">名前</label>
             <input
               v-model="label"
               type="text"

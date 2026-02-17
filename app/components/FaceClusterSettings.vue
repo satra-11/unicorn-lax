@@ -8,6 +8,7 @@ const props = defineProps<{
   cluster: FaceCluster
   sessionId: string
   isOpen: boolean
+  allClusters: FaceCluster[]
 }>()
 
 const emit = defineEmits<{
@@ -114,6 +115,45 @@ const toggleConfirm = (photoId: string) => {
     confirmedIds.value.add(photoId)
   }
 }
+
+// Move Logic
+import { movePhotoToCluster } from '~/utils/clustering'
+
+const moveTargetPhoto = ref<Photo | null>(null)
+const showMoveModal = ref(false)
+
+const openMoveModal = (photo: Photo) => {
+  moveTargetPhoto.value = photo
+  showMoveModal.value = true
+}
+
+const handleMove = async (targetClusterId: string) => {
+  if (!moveTargetPhoto.value) return
+  
+  isLoading.value = true
+  try {
+    await movePhotoToCluster(moveTargetPhoto.value.id, props.cluster.id, targetClusterId)
+    
+    // Remove from local list immediately
+    photos.value = photos.value.filter(p => p.id !== moveTargetPhoto.value?.id)
+    confirmedIds.value.delete(moveTargetPhoto.value.id) // Cleanup if it was confirmed
+    
+    emit('update') // Parent refresh might be needed if centroids changed enough to affect other things, but mainly just to signal change.
+    showMoveModal.value = false
+    moveTargetPhoto.value = null
+  } catch (e: any) {
+    console.error('Failed to move photo', e)
+    alert(`Failed to move photo: ${e.message}`)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Filter out current cluster from options
+const targetClusters = computed(() => {
+  return props.allClusters.filter(c => c.id !== props.cluster.id)
+})
+
 
 const getPhotoUrl = (photo: Photo) => {
   // If we have a thumbnail blob, use it
@@ -228,6 +268,30 @@ const getPhotoUrl = (photo: Photo) => {
                   No Img
                 </div>
 
+                <!-- Move Button (Top Left) -->
+                <button
+                  v-if="!isUnrecognized"
+                  class="absolute top-1 left-1 bg-white/90 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20 hover:bg-white hover:text-blue-600 shadow-sm"
+                  @click.stop="openMoveModal(photo)"
+                  title="Move to another person"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-4 w-4 text-gray-600 hover:text-blue-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                    />
+                  </svg>
+                </button>
+
+
                 <!-- Selection Border Overlay -->
                 <div
                   v-if="!isUnrecognized"
@@ -271,6 +335,48 @@ const getPhotoUrl = (photo: Photo) => {
             @click="saveSettings"
           >
             設定を保存
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Move Confirmation Modal -->
+    <div
+      v-if="showMoveModal && moveTargetPhoto"
+      class="fixed inset-0 z-[10000] flex items-center justify-center p-4"
+    >
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showMoveModal = false"></div>
+      <div class="relative bg-white rounded-lg shadow-xl max-w-sm w-full p-6 z-10">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">別の人物へ移動</h3>
+        <p class="text-sm text-gray-600 mb-4">
+          選択した写真を別の人物グループへ移動します。<br/>
+          移動後、両方のグループで顔モデルが再学習されます。
+        </p>
+
+        <div class="space-y-2 max-h-60 overflow-y-auto mb-4 border rounded p-2">
+          <button
+            v-for="target in targetClusters"
+            :key="target.id"
+            class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded transition-colors flex items-center gap-2"
+            @click="handleMove(target.id)"
+          >
+            <div class="w-6 h-6 bg-gray-200 rounded-full overflow-hidden flex-shrink-0">
+               <!-- Simple thumbnail for target -->
+               <!-- Using a reliable way to get thumbnail URL without complexity here, maybe skip or reuse helper if available in scope. We don't have helper easily accessible in loop context without wrapper, but let's try just label. -->
+            </div>
+            <span class="truncate font-medium">{{ target.label }}</span>
+          </button>
+          <div v-if="targetClusters.length === 0" class="text-center text-gray-400 py-4 text-sm">
+            移動可能な他のグループがありません。
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+            @click="showMoveModal = false"
+          >
+            キャンセル
           </button>
         </div>
       </div>

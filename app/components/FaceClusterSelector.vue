@@ -18,7 +18,6 @@ const selectedClusters = ref<Set<string>>(new Set())
 const isLoading = ref(false)
 const editingClusterId = ref<string | null>(null)
 const editingLabel = ref('')
-const editInputRef = ref<HTMLInputElement | null>(null)
 
 // Settings Modal State
 const showSettings = ref(false)
@@ -78,12 +77,17 @@ const toggleSelection = (cluster: FaceCluster) => {
   emit('select', selected)
 }
 
+const setEditInputRef = (el: any) => {
+  if (el && editingClusterId.value) {
+    el.focus()
+    el.select()
+  }
+}
+
 const startEditing = async (cluster: FaceCluster) => {
   editingClusterId.value = cluster.id
   editingLabel.value = cluster.label
-  await nextTick()
-  editInputRef.value?.focus()
-  editInputRef.value?.select()
+  // Focus will happen via :ref callback when element renders
 }
 
 const handleEnter = (e: KeyboardEvent) => {
@@ -151,7 +155,7 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
             <!-- Inline label editing -->
             <div v-if="editingClusterId === cluster.id" @click.stop>
               <input
-                ref="editInputRef"
+                :ref="setEditInputRef"
                 v-model="editingLabel"
                 class="w-full text-xs font-medium text-center border border-blue-400 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 @keydown.enter="handleEnter"
@@ -206,6 +210,7 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
       :is-open="showSettings"
       @close="showSettings = false"
       @update="handleSettingsUpdate"
+      :all-clusters="clusters"
     />
   </div>
 </template>

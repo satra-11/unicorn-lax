@@ -291,3 +291,49 @@ export async function getUnrecognizedPhotos(sessionId: string): Promise<Photo[]>
   // unrecognized means: faces array is empty or undefined, OR noFaceMatch is true (though noFaceMatch might be used for logic elsewhere)
   return photos.filter((p) => !p.faces || p.faces.length === 0)
 }
+
+/**
+ * Moves a photo from one cluster to another and recalculates both centroids.
+ * This acts as a feedback loop: explicitly confirming the photo belongs to the target
+ * and does NOT belong to the source.
+ */
+export async function movePhotoToCluster(
+  photoId: string,
+  sourceClusterId: string,
+  targetClusterId: string,
+): Promise<void> {
+  const clusters = await getAllClusters()
+  const source = clusters.find((c) => c.id === sourceClusterId)
+  const target = clusters.find((c) => c.id === targetClusterId)
+
+  if (!source || !target) {
+    throw new Error('Source or target cluster not found')
+  }
+
+  // 1. Remove from source
+  source.photoIds = source.photoIds.filter((id) => id !== photoId)
+  if (source.confirmedPhotoIds) {
+    source.confirmedPhotoIds = source.confirmedPhotoIds.filter((id) => id !== photoId)
+  }
+
+  // 2. Add to target (and confirm it)
+  // Ensure we don't duplicate
+  if (!target.photoIds.includes(photoId)) {
+    target.photoIds.push(photoId)
+  }
+  if (!target.confirmedPhotoIds) target.confirmedPhotoIds = []
+  if (!target.confirmedPhotoIds.includes(photoId)) {
+    target.confirmedPhotoIds.push(photoId)
+  }
+
+  // 3. Save changes
+  await saveCluster(source)
+  await saveCluster(target)
+
+  // 4. Recalculate centroids (Feedback Loop)
+  // We await these sequentially to ensure data consistency, though parallel matches are possible.
+  await recalculateClusterCentroid(source.id)
+  await recalculateClusterCentroid(target.id)
+
+  console.log(`[Cluster] Moved photo ${photoId} from ${source.label} to ${target.label} and updated centroids.`)
+}

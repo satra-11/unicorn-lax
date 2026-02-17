@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, toRaw, computed } from 'vue'
 import type { FaceCluster, Photo } from '~/utils/types'
-import { recalculateClusterCentroid, movePhotoToCluster } from '~/utils/clustering'
+import { movePhotoToCluster } from '~/utils/clustering'
 import { getPhoto, saveCluster } from '~/utils/db'
 
 const props = defineProps<{
@@ -17,11 +17,7 @@ const emit = defineEmits<{
 
 const isLoading = ref(false)
 const photos = ref<Photo[]>([])
-const threshold = ref(0.4)
 const label = ref('')
-
-// We need to know which photos are "confirmed" vs just "auto-assigned"
-const confirmedIds = ref<Set<string>>(new Set())
 
 const isUnrecognized = computed(() => props.cluster.id === 'unrecognized')
 
@@ -31,9 +27,7 @@ const loadData = async () => {
   isLoading.value = true
   try {
     // 1. Setup local state from cluster config
-    threshold.value = props.cluster.config?.similarityThreshold ?? 0.4
     label.value = props.cluster.label
-    confirmedIds.value = new Set(props.cluster.confirmedPhotoIds || [])
 
     // 2. Load photos for this cluster
     const allIds = new Set([...props.cluster.photoIds, ...(props.cluster.confirmedPhotoIds || [])])
@@ -64,18 +58,10 @@ const saveSettings = async () => {
     return
   }
 
-  // Save threshold
-  // structuredClone ensures we detach from Vue proxies/reactivity completely
-  // and toRaw ensures we are cloning the plain object data
+  // Save label
   const updated = structuredClone(toRaw(props.cluster))
 
-  if (!updated.config) updated.config = {}
-  updated.config.similarityThreshold = Number(threshold.value)
-
-  // Save confirmed IDs
-  updated.confirmedPhotoIds = Array.from(confirmedIds.value)
-
-  // Save label and other settings
+  // Save label
   if (label.value !== props.cluster.label) {
     updated.label = label.value
   }
@@ -86,33 +72,6 @@ const saveSettings = async () => {
   } catch (e: any) {
     console.error('Failed to save settings:', e)
     alert(`Failed to save settings: ${e.message}`)
-  }
-}
-// ... (skip down to template)
-
-const triggerRecalculate = async () => {
-  isLoading.value = true
-  try {
-    // Ensure settings are saved first so confirm list is up to date
-    await saveSettings()
-
-    await recalculateClusterCentroid(props.cluster.id)
-    emit('update') // Cluster descriptor changed
-
-    alert('Cluster updated! Future matches should be more accurate.')
-  } catch (e) {
-    console.error(e)
-    alert('Failed to recalculate.')
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const toggleConfirm = (photoId: string) => {
-  if (confirmedIds.value.has(photoId)) {
-    confirmedIds.value.delete(photoId)
-  } else {
-    confirmedIds.value.add(photoId)
   }
 }
 
@@ -133,7 +92,6 @@ const handleMove = async (targetClusterId: string) => {
 
     // Remove from local list immediately
     photos.value = photos.value.filter((p) => p.id !== moveTargetPhoto.value?.id)
-    confirmedIds.value.delete(moveTargetPhoto.value.id) // Cleanup if it was confirmed
 
     emit('update') // Parent refresh might be needed if centroids changed enough to affect other things, but mainly just to signal change.
     showMoveModal.value = false
@@ -221,18 +179,10 @@ const getPhotoUrl = (photo: Photo) => {
                 </h3>
                 <p v-if="!isUnrecognized" class="text-xs text-gray-500 mt-1">
                   この人物として分類された写真の一覧です。<br />
-                  間違っている写真があれば、クリックして除外できます (緑枠が確定)。
+                  間違って分類されている写真があれば、左上のアイコンから別の人物へ移動できます。
                 </p>
                 <p v-else class="text-xs text-gray-500 mt-1">顔が検出されなかった画像です。</p>
               </div>
-              <button
-                v-if="!isUnrecognized"
-                :disabled="isLoading"
-                class="px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-                @click="triggerRecalculate"
-              >
-                {{ isLoading ? '計算中...' : '顔モデルを更新' }}
-              </button>
             </div>
 
             <div
@@ -243,19 +193,12 @@ const getPhotoUrl = (photo: Photo) => {
                 :key="photo.id"
                 class="relative aspect-square cursor-pointer group rounded-lg overflow-hidden shadow-sm transition-all hover:shadow-md"
                 :class="{ 'cursor-default': isUnrecognized }"
-                @click="!isUnrecognized && toggleConfirm(photo.id)"
               >
                 <img
                   v-if="photo.thumbnail"
                   :src="getPhotoUrl(photo)"
                   class="w-full h-full object-cover transition-opacity duration-200"
-                  :class="
-                    isUnrecognized
-                      ? 'opacity-100'
-                      : confirmedIds.has(photo.id)
-                        ? 'opacity-100'
-                        : 'opacity-60 group-hover:opacity-100 grayscale-[30%] group-hover:grayscale-0'
-                  "
+                  :class="isUnrecognized ? 'opacity-100' : 'opacity-100'"
                 />
                 <div
                   v-else
@@ -286,32 +229,6 @@ const getPhotoUrl = (photo: Photo) => {
                     />
                   </svg>
                 </button>
-
-                <!-- Selection Border Overlay -->
-                <div
-                  v-if="!isUnrecognized"
-                  class="absolute inset-0 border-4 transition-colors duration-200 pointer-events-none"
-                  :class="confirmedIds.has(photo.id) ? 'border-green-500' : 'border-transparent'"
-                ></div>
-
-                <!-- Checkmark Badge -->
-                <div
-                  v-if="!isUnrecognized && confirmedIds.has(photo.id)"
-                  class="absolute top-1 right-1 bg-green-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs shadow-sm z-10"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-3.5 w-3.5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fill-rule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
-                </div>
               </div>
             </div>
           </div>
@@ -335,7 +252,6 @@ const getPhotoUrl = (photo: Photo) => {
       </div>
     </div>
 
-    <!-- Move Confirmation Modal -->
     <div
       v-if="showMoveModal && moveTargetPhoto"
       class="fixed inset-0 z-[10000] flex items-center justify-center p-4"

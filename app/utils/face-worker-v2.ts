@@ -82,6 +82,7 @@ async function loadModels() {
   try {
     if (!faceapi) {
       // Import face-api.js only AFTER polyfills are set
+      postMessage({ type: 'LOADING_PROGRESS', payload: { message: 'AIエンジンを読み込んでいます...' } })
       faceapi = await import('face-api.js')
       console.log('Worker: face-api.js imported. Loading models...')
 
@@ -111,19 +112,23 @@ async function loadModels() {
 
     if (useSsdMobilenetv1) {
       console.log('Worker: Loading SSD MobileNet V1...')
+      postMessage({ type: 'LOADING_PROGRESS', payload: { message: '顔検出モデルをダウンロード中...' } })
       await faceapi.nets.ssdMobilenetv1.loadFromUri(MODELS_URL)
     } else {
       console.log('Worker: Loading TinyFaceDetector...')
+      postMessage({ type: 'LOADING_PROGRESS', payload: { message: '顔検出モデルをダウンロード中...' } })
       await faceapi.nets.tinyFaceDetector.loadFromUri(MODELS_URL + '/tiny_face_detector')
     }
 
     if (!isLoaded) {
+      postMessage({ type: 'LOADING_PROGRESS', payload: { message: '顔認識モデルをダウンロード中...' } })
       await faceapi.nets.faceLandmark68Net.loadFromUri(MODELS_URL)
       await faceapi.nets.faceRecognitionNet.loadFromUri(MODELS_URL)
     }
 
     isLoaded = true
     currentModelLoaded = true
+    postMessage({ type: 'LOADING_PROGRESS', payload: { message: '' } })
     console.log('Worker: Models loaded successfully.')
   } catch (error) {
     console.error('Worker: Failed to load models:', error)

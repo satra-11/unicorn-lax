@@ -9,6 +9,7 @@ const progress = ref(0)
 const total = ref(0)
 const currentSession = ref<ProcessingSession | null>(null)
 const faceModel = ref<'ssd' | 'tiny'>('ssd') // Default to SSD
+const processingStatus = ref('')
 
 // Initialize from localStorage if client-side
 if (import.meta.client) {
@@ -37,7 +38,9 @@ const initWorker = () => {
     worker.onmessage = (e) => {
       console.log('Worker message received:', e.data.type)
       const { type, id, payload, error } = e.data
-      if (type === 'INIT_SUCCESS') {
+      if (type === 'LOADING_PROGRESS') {
+        processingStatus.value = payload.message
+      } else if (type === 'INIT_SUCCESS') {
         console.log('Worker initialized successfully')
       } else if (type === 'SET_MODEL_SUCCESS') {
         console.log('Worker model switched successfully')
@@ -364,5 +367,6 @@ export const usePhotoProcessor = () => {
     currentSession,
     faceModel,
     setFaceModel,
+    processingStatus,
   }
 }

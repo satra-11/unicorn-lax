@@ -205,7 +205,7 @@ onBeforeUnmount(() => {
         <!-- Hero Section -->
         <div class="text-center px-4">
           <h1
-            class="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 mb-6 tracking-tight"
+            class="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 mb-2 tracking-tight"
           >
             Unicorn Lax
           </h1>
@@ -217,7 +217,7 @@ onBeforeUnmount(() => {
 
         <!-- Main Action (Uploader) -->
         <div
-          class="max-w-3xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100 my-16"
+          class="max-w-3xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100 my-10"
         >
           <div class="p-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
           <div class="p-8">
@@ -292,7 +292,7 @@ onBeforeUnmount(() => {
             </div>
           </div>
         </div>
-        <div class="text-center mt-12 text-gray-400 text-sm pb-8">
+        <div class="text-center mt-20 text-gray-400 text-sm pb-8">
           &copy; {{ new Date().getFullYear() }} Unicorn Lax. All processing is done locally.
         </div>
       </div>

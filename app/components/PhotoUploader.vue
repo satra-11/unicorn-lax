@@ -23,12 +23,11 @@ const onFolderSelect = async (event: Event) => {
       class="text-center"
     >
       <h2 class="text-xl font-bold mb-4 text-black">写真のアップロード</h2>
-      <p class="mb-4 text-gray-600">写真が入っているフォルダを選択してください (最大10,000枚)。</p>
 
       <!-- Model Selection -->
       <div class="mb-6 max-w-sm mx-auto text-left">
         <label class="block text-sm font-medium text-gray-700 mb-2"
-          >顔検出モデル (Face Detection Model)</label
+          >顔検出モデル</label
         >
         <div class="grid grid-cols-1 gap-2">
           <label

@@ -133,8 +133,8 @@ const getPhotoUrl = (photo: Photo) => {
         role="dialog"
         aria-modal="true"
       >
-        <div class="flex justify-between items-center p-6 border-b sticky top-0 bg-white z-20">
-          <h2 class="text-xl font-bold text-gray-900">
+        <div class="flex justify-between items-center p-3 border-b sticky top-0 bg-white z-20">
+          <h2 class="text-lg font-bold text-gray-900">
             {{ isUnrecognized ? '未検出の画像 (Unrecognized Photos)' : `編集: ${cluster.label}` }}
           </h2>
           <button
@@ -178,7 +178,6 @@ const getPhotoUrl = (photo: Photo) => {
                   {{ isUnrecognized ? '画像一覧' : '分類された写真 (内訳)' }}
                 </h3>
                 <p v-if="!isUnrecognized" class="text-xs text-gray-500 mt-1">
-                  この人物として分類された写真の一覧です。<br />
                   間違って分類されている写真があれば、左上のアイコンから別の人物へ移動できます。
                 </p>
                 <p v-else class="text-xs text-gray-500 mt-1">顔が検出されなかった画像です。</p>
@@ -234,7 +233,7 @@ const getPhotoUrl = (photo: Photo) => {
           </div>
         </div>
 
-        <div class="p-6 border-t bg-gray-50 flex justify-end gap-3 rounded-b-xl">
+        <div class="p-3 border-t bg-gray-50 flex justify-end gap-3 rounded-b-xl">
           <button
             class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
             @click="$emit('close')"

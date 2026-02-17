@@ -196,7 +196,9 @@ onBeforeUnmount(() => {
       <!-- LP Style Landing Section -->
       <div
         v-if="
-          step === 'upload' && !isProcessing && (!currentSession || currentSession.status !== 'processing')
+          step === 'upload' &&
+          !isProcessing &&
+          (!currentSession || currentSession.status !== 'processing')
         "
         class="animate-fade-in"
       >
@@ -208,13 +210,16 @@ onBeforeUnmount(() => {
             Unicorn Lax
           </h1>
           <p class="text-xl md:text-2xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-            大量の写真から、<span class="font-bold text-gray-800">「最高の瞬間」</span>を自動で選定。<br />
+            大量の写真から、<span class="font-bold text-gray-800">「最高の瞬間」</span
+            >を自動で選定。<br />
             プライバシー重視。すべての処理はブラウザ内で完結します。
           </p>
         </div>
 
         <!-- Main Action (Uploader) -->
-        <div class="max-w-3xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100  my-16 ">
+        <div
+          class="max-w-3xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100 my-16"
+        >
           <div class="p-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
           <div class="p-8">
             <div
@@ -222,13 +227,17 @@ onBeforeUnmount(() => {
               class="mb-8 p-6 bg-blue-50 border border-blue-100 rounded-xl flex flex-col sm:flex-row justify-between items-center gap-4"
             >
               <div class="flex items-center gap-4">
-                 <div class="w-12 h-12 bg-blue-200 text-blue-700 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span class="i-lucide-check w-6 h-6" />
-                 </div>
-                 <div>
-                    <h3 class="font-bold text-blue-900 text-lg">分析完了</h3>
-                    <p class="text-blue-700">{{ currentSession.totalFiles }} 枚の写真データがあります</p>
-                 </div>
+                <div
+                  class="w-12 h-12 bg-blue-200 text-blue-700 rounded-full flex items-center justify-center flex-shrink-0"
+                >
+                  <span class="i-lucide-check w-6 h-6" />
+                </div>
+                <div>
+                  <h3 class="font-bold text-blue-900 text-lg">分析完了</h3>
+                  <p class="text-blue-700">
+                    {{ currentSession.totalFiles }} 枚の写真データがあります
+                  </p>
+                </div>
               </div>
               <button
                 class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold shadow-lg shadow-blue-200 transition-all transform hover:-translate-y-0.5"
@@ -239,51 +248,53 @@ onBeforeUnmount(() => {
             </div>
 
             <PhotoUploader :current-session-id="currentSession?.id" />
-            
+
             <!-- Backup / Restore / Reset Actions -->
             <div class="pt-6 border-t border-gray-100 flex flex-wrap justify-center gap-4">
-                <button
-                    class="px-4 py-2 text-sm bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-lg transition-colors flex items-center gap-2"
-                    @click="onExport"
-                >
-                    <span class="i-lucide-download w-4 h-4" />
-                    バックアップ保存
-                </button>
+              <button
+                class="px-4 py-2 text-sm bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-lg transition-colors flex items-center gap-2"
+                @click="onExport"
+              >
+                <span class="i-lucide-download w-4 h-4" />
+                バックアップ保存
+              </button>
 
-                <button
-                    class="px-4 py-2 text-sm bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-lg transition-colors flex items-center gap-2 relative overflow-hidden"
-                    @click="triggerImport"
-                >
-                    <span class="i-lucide-upload w-4 h-4" />
-                    データ復元
-                    <input
-                        ref="fileInput"
-                        type="file"
-                        accept=".json"
-                        class="absolute inset-0 opacity-0 cursor-pointer"
-                        @change="onImportFile"
-                    />
-                </button>
-                
-                 <div class="w-full sm:w-auto h-px sm:h-auto sm:border-l border-gray-200 mx-2 hidden sm:block"></div>
+              <button
+                class="px-4 py-2 text-sm bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-lg transition-colors flex items-center gap-2 relative overflow-hidden"
+                @click="triggerImport"
+              >
+                <span class="i-lucide-upload w-4 h-4" />
+                データ復元
+                <input
+                  ref="fileInput"
+                  type="file"
+                  accept=".json"
+                  class="absolute inset-0 opacity-0 cursor-pointer"
+                  @change="onImportFile"
+                />
+              </button>
 
-                <button
-                    class="px-4 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    @click="onClearPhotos"
-                >
-                    写真のみ削除
-                </button>
-                 <button
-                    class="px-4 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    @click="onResetDb"
-                >
-                    全データ初期化
-                </button>
+              <div
+                class="w-full sm:w-auto h-px sm:h-auto sm:border-l border-gray-200 mx-2 hidden sm:block"
+              ></div>
+
+              <button
+                class="px-4 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                @click="onClearPhotos"
+              >
+                写真のみ削除
+              </button>
+              <button
+                class="px-4 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                @click="onResetDb"
+              >
+                全データ初期化
+              </button>
             </div>
           </div>
         </div>
         <div class="text-center mt-12 text-gray-400 text-sm pb-8">
-            &copy; {{ new Date().getFullYear() }} Unicorn Lax. All processing is done locally.
+          &copy; {{ new Date().getFullYear() }} Unicorn Lax. All processing is done locally.
         </div>
       </div>
 
@@ -292,7 +303,7 @@ onBeforeUnmount(() => {
         v-else-if="step === 'upload' || isProcessing || currentSession?.status === 'processing'"
         class="bg-white p-8 rounded-2xl shadow-lg mb-6 max-w-2xl mx-auto"
       >
-         <PhotoUploader :current-session-id="currentSession?.id" />
+        <PhotoUploader :current-session-id="currentSession?.id" />
       </div>
 
       <!-- Step 2: Select Faces -->

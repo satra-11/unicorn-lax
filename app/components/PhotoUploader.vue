@@ -26,9 +26,7 @@ const onFolderSelect = async (event: Event) => {
 
       <!-- Model Selection -->
       <div class="mb-6 max-w-sm mx-auto text-left">
-        <label class="block text-sm font-medium text-gray-700 mb-2"
-          >顔検出モデル</label
-        >
+        <label class="block text-sm font-medium text-gray-700 mb-2">顔検出モデル</label>
         <div class="grid grid-cols-1 gap-2">
           <label
             class="flex items-center p-3 border rounded-lg cursor-pointer transition-colors hover:bg-gray-50"

@@ -21,7 +21,7 @@ if (import.meta.client) {
 let worker: Worker | null = null
 const pendingRequests = new Map<
   string,
-  { resolve: (val: any) => void; reject: (err: any) => void }
+  { resolve: (val: unknown) => void; reject: (err: unknown) => void }
 >()
 
 const initWorker = () => {
@@ -92,7 +92,7 @@ const setFaceModel = (model: 'ssd' | 'tiny') => {
 
 const detectFacesInWorker = async (photoId: string, imageBitmap: ImageBitmap) => {
   if (!worker) initWorker() // Ensure worker is init
-  return new Promise<any>((resolve, reject) => {
+  return new Promise<unknown>((resolve, reject) => {
     pendingRequests.set(photoId, { resolve, reject })
     worker!.postMessage({ type: 'DETECT', id: photoId, payload: { imageBitmap } }, [imageBitmap])
   })
@@ -145,7 +145,10 @@ export const usePhotoProcessor = () => {
       const sessionId = `session-${Date.now()}`
       session = {
         id: sessionId,
-        folderName: (files[0] as any).webkitRelativePath?.split('/')[0] || 'Generic Upload',
+        folderName:
+          (files[0] as unknown as { webkitRelativePath?: string }).webkitRelativePath?.split(
+            '/',
+          )[0] || 'Generic Upload',
         totalFiles: fileArray.length,
         processedCount: 0,
         status: 'processing',
@@ -201,7 +204,9 @@ export const usePhotoProcessor = () => {
                     id: crypto.randomUUID(),
                     sessionId: session.id,
                     name: file.name, // Use current file name just in case
-                    relativePath: (file as any).webkitRelativePath || file.name,
+                    relativePath:
+                      (file as unknown as { webkitRelativePath?: string }).webkitRelativePath ||
+                      file.name,
                     // Ensure we keep the hash & model
                     hash,
                     detectionModel: existing.detectionModel,
@@ -222,7 +227,9 @@ export const usePhotoProcessor = () => {
               id: crypto.randomUUID(),
               sessionId: session.id,
               name: file.name,
-              relativePath: (file as any).webkitRelativePath || file.name,
+              relativePath:
+                (file as unknown as { webkitRelativePath?: string }).webkitRelativePath ||
+                file.name,
               timestamp: meta.timestamp,
               dateStr: meta.dateStr,
               hash,
@@ -241,7 +248,19 @@ export const usePhotoProcessor = () => {
               }
 
               if (bitmap) {
-                const detectionResult = await detectFacesInWorker(photo.id, bitmap)
+                const detectionResult = (await detectFacesInWorker(photo.id, bitmap)) as Array<{
+                  detection: {
+                    _x?: number
+                    _y?: number
+                    _width?: number
+                    _height?: number
+                    x?: number
+                    y?: number
+                    width?: number
+                    height?: number
+                  }
+                  descriptor: Float32Array
+                }>
                 // NOTE: bitmap is now neutered (transferred to worker), cannot be used for drawing.
 
                 if (detectionResult && detectionResult.length > 0) {
@@ -254,15 +273,16 @@ export const usePhotoProcessor = () => {
                   }
 
                   photo.faces = await Promise.all(
-                    detectionResult.map(async (face: any) => {
+                    detectionResult.map(async (face) => {
+                      const { _x, _y, _width, _height } = face.detection
+                      const x = _x ?? face.detection.x ?? 0
+                      const y = _y ?? face.detection.y ?? 0
+                      const width = _width ?? face.detection.width ?? 0
+                      const height = _height ?? face.detection.height ?? 0
+
                       let blob: Blob | undefined
                       if (cropBitmap) {
                         try {
-                          const { _x, _y, _width, _height } = face.detection
-                          const x = _x ?? face.detection.x ?? 0
-                          const y = _y ?? face.detection.y ?? 0
-                          const width = _width ?? face.detection.width ?? 0
-                          const height = _height ?? face.detection.height ?? 0
                           const size = Math.max(width, height)
                           const canvas = new OffscreenCanvas(size, size)
                           const ctx = canvas.getContext('2d')
@@ -277,7 +297,7 @@ export const usePhotoProcessor = () => {
 
                       return {
                         descriptor: face.descriptor,
-                        box: face.detection,
+                        box: { x, y, width, height },
                         thumbnail: blob,
                       }
                     }),

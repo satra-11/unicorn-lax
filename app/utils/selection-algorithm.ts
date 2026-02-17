@@ -75,9 +75,8 @@ export async function selectGroupBalancedPhotos(
   for (let i = 0; i < count; i++) {
     if (pool.length === 0) break
 
-    // Calculate dynamic score for each candidate in the pool
-    // Dynamic Score = Base Score (number of subjects) - Penalty (subjects already selected)
-    // We want to pick photos that contain subjects with LOW current counts.
+    // Find the minimum subject count to prioritize underrepresented subjects
+    const minCount = Math.min(...Array.from(subjectCounts.values()))
 
     let bestCandidateIndex = -1
     let maxScore = -Infinity
@@ -86,6 +85,12 @@ export async function selectGroupBalancedPhotos(
       const candidate = pool[j]!
       let score = 0
 
+      // Check if this candidate contains any underrepresented subject
+      // (a subject whose count equals the current minimum)
+      const hasUnderrepresentedSubject = candidate.subjects.some(
+        (subId) => (subjectCounts.get(subId) || 0) === minCount,
+      )
+
       // Base score: +1 for each target subject in the photo
       // Penalty: -1 * current_count for each subject
       // This makes photos with "rare" subjects more valuable.
@@ -93,6 +98,13 @@ export async function selectGroupBalancedPhotos(
         score += 1
         score -= subjectCounts.get(subId) || 0
       })
+
+      // Bonus for containing underrepresented subjects.
+      // This prevents photos of already-well-represented subjects from
+      // being selected when photos with underrepresented subjects exist.
+      if (hasUnderrepresentedSubject) {
+        score += 2
+      }
 
       if (score > maxScore) {
         maxScore = score

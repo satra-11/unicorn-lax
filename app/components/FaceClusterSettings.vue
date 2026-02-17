@@ -69,9 +69,9 @@ const saveSettings = async () => {
   try {
     await saveCluster(updated)
     emit('update')
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error('Failed to save settings:', e)
-    alert(`Failed to save settings: ${e.message}`)
+    alert(`Failed to save settings: ${(e as Error).message}`)
   }
 }
 
@@ -96,9 +96,9 @@ const handleMove = async (targetClusterId: string) => {
     emit('update') // Parent refresh might be needed if centroids changed enough to affect other things, but mainly just to signal change.
     showMoveModal.value = false
     moveTargetPhoto.value = null
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error('Failed to move photo', e)
-    alert(`Failed to move photo: ${e.message}`)
+    alert(`Failed to move photo: ${(e as Error).message}`)
   } finally {
     isLoading.value = false
   }

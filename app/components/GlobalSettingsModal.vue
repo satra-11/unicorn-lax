@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { usePhotoProcessor } from '~/composables/usePhotoProcessor'
 
-const props = defineProps<{
+const _props = defineProps<{
   isOpen: boolean
 }>()
 
-const emit = defineEmits<{
+const _emit = defineEmits<{
   (e: 'close'): void
 }>()
 

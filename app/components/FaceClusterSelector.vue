@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, nextTick } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import type { FaceCluster, ProcessingSession } from '~/utils/types'
 import { clusterFaces, getUnrecognizedPhotos } from '~/utils/clustering'
 import { updateClusterLabel } from '~/utils/db'
@@ -77,8 +77,8 @@ const toggleSelection = (cluster: FaceCluster) => {
   emit('select', selected)
 }
 
-const setEditInputRef = (el: any) => {
-  if (el && editingClusterId.value) {
+const setEditInputRef = (el: unknown) => {
+  if (el instanceof HTMLInputElement && editingClusterId.value) {
     el.focus()
     el.select()
   }

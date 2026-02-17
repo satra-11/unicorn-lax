@@ -13,7 +13,7 @@ import {
   importDatabase,
 } from '~/utils/db'
 
-const { isProcessing, progress, total, currentSession } = usePhotoProcessor()
+const { isProcessing, progress: _progress, total: _total, currentSession } = usePhotoProcessor()
 const step = ref<'upload' | 'select-faces' | 'review' | 'confirmed'>('upload')
 const selectedClusters = ref<FaceCluster[]>([])
 const generatedPhotos = ref<Photo[]>([])

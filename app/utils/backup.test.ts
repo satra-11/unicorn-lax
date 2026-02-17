@@ -19,10 +19,10 @@ describe('Backup Utils', () => {
 
     // Mock global fetch
 
-    global.fetch = vi.fn((url: any) =>
+    global.fetch = vi.fn((_url: unknown) =>
       Promise.resolve({
         blob: () => Promise.resolve(new Blob(['mock-blob-content'])),
-      } as any),
+      } as unknown as Response),
     )
   })
 
@@ -65,19 +65,19 @@ describe('Backup Utils', () => {
     expect(mockDB.put).toHaveBeenCalledTimes(3) // 1 session, 1 photo, 1 cluster
 
     // Check Photo restoration
-    const photoCall = mockDB.put.mock.calls.find((c: any) => c[0] === 'photos')
+    const photoCall = mockDB.put.mock.calls.find((c: unknown[]) => c[0] === 'photos')
     expect(photoCall).toBeDefined()
     if (photoCall) {
-      expect(photoCall[1].thumbnail).toBeInstanceOf(Blob)
+      const photo = photoCall[1] as { thumbnail: Blob }
+      expect(photo.thumbnail).toBeInstanceOf(Blob)
       // Check MIME type if possible (happy-dom Blob implementation details vary, but let's assume it keeps type)
-      expect(photoCall[1].thumbnail.type).toBe('image/png') // Manual parsing now correctly extracts type
+      expect(photo.thumbnail.type).toBe('image/png') // Manual parsing now correctly extracts type
     }
   })
 
   it('should preserve MIME types and face thumbnails', async () => {
     // Mock with explicit MIME type in Data URL
-    const dataUrl =
-      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+    // const dataUrl = 'data:image/png;base64,...' // Unused
 
     const mockPhotos = [
       {
@@ -117,7 +117,9 @@ describe('Backup Utils', () => {
     // Now import
     await importDatabase(json)
 
-    const photoPut = mockDB.put.mock.calls.find((c: any) => c[0] === 'photos' && c[1].id === 'p2')
+    const photoPut = mockDB.put.mock.calls.find(
+      (c: unknown[]) => c[0] === 'photos' && (c[1] as { id: string }).id === 'p2',
+    )
     expect(photoPut).toBeDefined()
     if (photoPut) {
       expect(photoPut[1].thumbnail.type).toBe('image/png')

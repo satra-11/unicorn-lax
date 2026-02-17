@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { clusterFaces } from './clustering'
 import * as db from './db'
 import * as faceapi from 'face-api.js'
+import type { Photo } from './types'
 
 // Mock dependencies
 vi.mock('./db')
@@ -28,8 +29,8 @@ describe('clustering', () => {
 
   describe('clusterFaces', () => {
     it('should create new clusters for unique faces', async () => {
-      const p1 = { id: 'p1', faces: [{ descriptor: [0.1], box: {} }] } as any
-      const p2 = { id: 'p2', faces: [{ descriptor: [0.9], box: {} }] } as any // Far from p1
+      const p1 = { id: 'p1', faces: [{ descriptor: [0.1], box: {} }] } as unknown as Photo
+      const p2 = { id: 'p2', faces: [{ descriptor: [0.9], box: {} }] } as unknown as Photo // Far from p1
 
       mockDB.getAllFromIndex.mockResolvedValue([p1, p2])
 
@@ -52,8 +53,8 @@ describe('clustering', () => {
     })
 
     it('should group similar faces', async () => {
-      const p1 = { id: 'p1', faces: [{ descriptor: [0.1], box: {} }] } as any
-      const p2 = { id: 'p2', faces: [{ descriptor: [0.15], box: {} }] } as any // Close to p1
+      const p1 = { id: 'p1', faces: [{ descriptor: [0.1], box: {} }] } as unknown as Photo
+      const p2 = { id: 'p2', faces: [{ descriptor: [0.15], box: {} }] } as unknown as Photo // Close to p1
 
       mockDB.getAllFromIndex.mockResolvedValue([p1, p2])
       vi.mocked(faceapi.euclideanDistance).mockImplementation((d1, d2) => {
@@ -81,7 +82,7 @@ describe('clustering', () => {
       // @ts-expect-error -- Mocking specific method
       db.getAllClusters.mockResolvedValue([existingCluster])
 
-      const p1 = { id: 'p1', faces: [{ descriptor: [0.15], box: {} }] } as any
+      const p1 = { id: 'p1', faces: [{ descriptor: [0.15], box: {} }] } as unknown as Photo
 
       mockDB.getAllFromIndex.mockResolvedValue([p1])
       vi.mocked(faceapi.euclideanDistance).mockImplementation((d1, d2) => {

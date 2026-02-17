@@ -1,6 +1,6 @@
 import * as faceapi from 'face-api.js'
 import type { Photo, FaceCluster } from './types'
-import { getDB, saveCluster, getAllClusters } from './db'
+import { getDB, saveCluster, getAllClusters, deleteCluster } from './db'
 
 // Threshold for face similarity. 0.6 is standard for dlib/face-api.js
 export const CLUSTER_THRESHOLD = 0.4
@@ -344,5 +344,114 @@ export async function movePhotoToCluster(
 
   console.log(
     `[Cluster] Moved photo ${photoId} from ${source.label} to ${target.label} and updated centroids.`,
+  )
+}
+
+// Threshold for suggesting a merge. Pairs with distance between
+// CLUSTER_THRESHOLD and this value are considered "similar enough to ask".
+export const MERGE_SUGGESTION_THRESHOLD = 0.48
+
+export interface SimilarClusterPair {
+  clusterA: FaceCluster
+  clusterB: FaceCluster
+  distance: number
+}
+
+/**
+ * Find pairs of clusters that are similar enough to potentially be the same person,
+ * but not similar enough to have been auto-merged during clustering.
+ * Returns pairs sorted by distance (closest first).
+ */
+export function findSimilarClusterPairs(clusters: FaceCluster[]): SimilarClusterPair[] {
+  const pairs: SimilarClusterPair[] = []
+
+  // Only consider real clusters (not unrecognized, with photos)
+  const realClusters = clusters.filter(
+    (c) => c.id !== 'unrecognized' && c.photoIds.length > 0 && c.descriptor.length > 0,
+  )
+
+  for (let i = 0; i < realClusters.length; i++) {
+    for (let j = i + 1; j < realClusters.length; j++) {
+      const a = realClusters[i]!
+      const b = realClusters[j]!
+
+      const distance = faceapi.euclideanDistance(Array.from(a.descriptor), Array.from(b.descriptor))
+
+      // Within the "maybe same person" range
+      const lowerBound = Math.max(
+        a.config?.similarityThreshold ?? CLUSTER_THRESHOLD,
+        b.config?.similarityThreshold ?? CLUSTER_THRESHOLD,
+      )
+
+      if (distance >= lowerBound && distance < MERGE_SUGGESTION_THRESHOLD) {
+        pairs.push({ clusterA: a, clusterB: b, distance })
+      }
+    }
+  }
+
+  // Sort by distance ascending (most similar first)
+  pairs.sort((a, b) => a.distance - b.distance)
+
+  return pairs
+}
+
+/**
+ * Merges two clusters into one. The "keep" cluster absorbs the "remove" cluster.
+ * - PhotoIds and confirmedPhotoIds are combined
+ * - Descriptor is averaged
+ * - Label preference: user-given name over auto-generated "Person X"
+ * - The "remove" cluster is deleted from DB
+ */
+export async function mergeClusters(
+  keepClusterId: string,
+  removeClusterId: string,
+): Promise<void> {
+  const clusters = await getAllClusters()
+  const keep = clusters.find((c) => c.id === keepClusterId)
+  const remove = clusters.find((c) => c.id === removeClusterId)
+
+  if (!keep || !remove) {
+    throw new Error('One or both clusters not found for merge')
+  }
+
+  const isAutoLabel = (label: string) => /^Person \d+$/.test(label)
+
+  // Prefer user-given label
+  if (isAutoLabel(keep.label) && !isAutoLabel(remove.label)) {
+    keep.label = remove.label
+  }
+
+  // Merge photo IDs (deduplicated)
+  const mergedPhotoIds = new Set([...keep.photoIds, ...remove.photoIds])
+  keep.photoIds = Array.from(mergedPhotoIds)
+
+  // Merge confirmed photo IDs
+  const mergedConfirmed = new Set([
+    ...(keep.confirmedPhotoIds ?? []),
+    ...(remove.confirmedPhotoIds ?? []),
+  ])
+  keep.confirmedPhotoIds = Array.from(mergedConfirmed)
+
+  // Keep the thumbnail from whichever has one
+  if (!keep.thumbnail && remove.thumbnail) {
+    keep.thumbnail = remove.thumbnail
+  }
+
+  // Average the descriptors
+  if (keep.descriptor.length > 0 && remove.descriptor.length > 0) {
+    const numDims = keep.descriptor.length
+    const mean = new Float32Array(numDims)
+    for (let i = 0; i < numDims; i++) {
+      mean[i] = ((keep.descriptor[i] ?? 0) + (remove.descriptor[i] ?? 0)) / 2
+    }
+    keep.descriptor = mean
+  }
+
+  // Save the merged cluster and delete the removed one
+  await saveCluster(keep)
+  await deleteCluster(remove.id)
+
+  console.log(
+    `[Cluster] Merged "${remove.label}" into "${keep.label}". Total photos: ${keep.photoIds.length}`,
   )
 }

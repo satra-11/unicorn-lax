@@ -1,9 +1,15 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import type { FaceCluster, ProcessingSession } from '~/utils/types'
-import { clusterFaces, getUnrecognizedPhotos } from '~/utils/clustering'
+import {
+  clusterFaces,
+  getUnrecognizedPhotos,
+  findSimilarClusterPairs,
+  type SimilarClusterPair,
+} from '~/utils/clustering'
 import { updateClusterLabel } from '~/utils/db'
 import FaceClusterSettings from '~/components/FaceClusterSettings.vue'
+import MergeSuggestionModal from '~/components/MergeSuggestionModal.vue'
 
 const props = defineProps<{
   session: ProcessingSession
@@ -23,6 +29,11 @@ const editingLabel = ref('')
 // Settings Modal State
 const showSettings = ref(false)
 const settingsCluster = ref<FaceCluster | null>(null)
+
+// Merge Suggestion State
+const similarPairs = ref<SimilarClusterPair[]>([])
+const showMergeSuggestion = ref(false)
+const mergeSuggestionChecked = ref(false)
 
 // Global Settings Modal State
 
@@ -51,6 +62,16 @@ const loadClusters = async () => {
     } else {
       clusters.value = detectedClusters
     }
+
+    // Check for similar clusters only on the first load (not after merge/settings update)
+    if (!mergeSuggestionChecked.value) {
+      mergeSuggestionChecked.value = true
+      const pairs = findSimilarClusterPairs(clusters.value)
+      if (pairs.length > 0) {
+        similarPairs.value = pairs
+        showMergeSuggestion.value = true
+      }
+    }
   } catch (e) {
     console.error('Clustering failed', e)
   } finally {
@@ -63,8 +84,20 @@ const handleSettingsUpdate = async () => {
   showSettings.value = false // Close modal
 }
 
+const handleMergeDone = async () => {
+  showMergeSuggestion.value = false
+  similarPairs.value = []
+  await loadClusters()
+}
+
 onMounted(loadClusters)
-watch(() => props.session, loadClusters)
+watch(
+  () => props.session,
+  () => {
+    mergeSuggestionChecked.value = false
+    loadClusters()
+  },
+)
 
 // Watch for singleSelection prop change to enforce valid state
 watch(
@@ -226,6 +259,13 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
         </div>
       </div>
     </div>
+
+    <!-- Merge Suggestion Modal -->
+    <MergeSuggestionModal
+      v-if="showMergeSuggestion && similarPairs.length > 0"
+      :pairs="similarPairs"
+      @done="handleMergeDone"
+    />
 
     <!-- Settings Modal -->
     <FaceClusterSettings

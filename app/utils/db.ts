@@ -96,6 +96,11 @@ export async function getAllClusters(): Promise<FaceCluster[]> {
   return db.getAll('clusters')
 }
 
+export async function deleteCluster(id: string): Promise<void> {
+  const db = await getDB()
+  await db.delete('clusters', id)
+}
+
 export async function updateClusterLabel(id: string, label: string) {
   const db = await getDB()
   const cluster = await db.get('clusters', id)

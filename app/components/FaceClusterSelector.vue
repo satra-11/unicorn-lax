@@ -68,7 +68,7 @@ const loadClusters = async () => {
     if (unrecognizedPhotos.length > 0) {
       const unrecognizedCluster: FaceCluster = {
         id: 'unrecognized',
-        label: '未検出 (Unrecognized)',
+        label: '未検出',
         descriptor: new Float32Array(0),
         photoIds: unrecognizedPhotos.map((p) => p.id),
         thumbnail: unrecognizedPhotos[0]?.thumbnail,

@@ -9,7 +9,7 @@ const handleError = () => clearError({ redirect: '/' })
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4">
+  <div class="min-h-screen bg-[#FFF9F0] flex flex-col items-center justify-center px-4">
     <div class="text-center max-w-md">
       <h1 class="text-6xl font-bold text-gray-300 mb-4">
         {{ error.statusCode || 500 }}
@@ -25,7 +25,7 @@ const handleError = () => clearError({ redirect: '/' })
         }}
       </p>
       <button
-        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm"
+        class="px-6 py-2 bg-[#FF6B6B] text-white rounded-lg hover:bg-[#e55a5a] transition-colors font-medium shadow-sm"
         @click="handleError"
       >
         トップページに戻る

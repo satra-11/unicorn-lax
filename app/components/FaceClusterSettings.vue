@@ -165,7 +165,7 @@ const getPhotoUrl = (photo: Photo) => {
             <input
               v-model="label"
               type="text"
-              class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
+              class="w-full border-gray-300 rounded-md shadow-sm focus:ring-[#FF6B6B] focus:border-[#FF6B6B] sm:text-sm px-3 py-2 border"
               placeholder="名前を入力"
             />
           </div>
@@ -209,13 +209,13 @@ const getPhotoUrl = (photo: Photo) => {
                 <!-- Move Button (Top Left) -->
                 <button
                   v-if="!isUnrecognized"
-                  class="absolute top-1 left-1 bg-white/90 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20 hover:bg-white hover:text-blue-600 shadow-sm"
+                  class="absolute top-1 left-1 bg-white/90 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20 hover:bg-white hover:text-[#FF6B6B] shadow-sm"
                   title="Move to another person"
                   @click.stop="openMoveModal(photo)"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    class="h-4 w-4 text-gray-600 hover:text-blue-600"
+                    class="h-4 w-4 text-gray-600 hover:text-[#FF6B6B]"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -270,7 +270,7 @@ const getPhotoUrl = (photo: Photo) => {
           <button
             v-for="target in targetClusters"
             :key="target.id"
-            class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded transition-colors flex items-center gap-2"
+            class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-[#FFF5F0] hover:text-[#FF6B6B] rounded transition-colors flex items-center gap-2"
             @click="handleMove(target.id)"
           >
             <div class="w-6 h-6 bg-gray-200 rounded-full overflow-hidden flex-shrink-0">

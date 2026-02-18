@@ -218,8 +218,8 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
         class="relative border-2 rounded-lg overflow-hidden transition-colors group/card"
         :class="
           selectedClusters.has(cluster.id)
-            ? 'border-blue-500 ring-2 ring-blue-300'
-            : 'border-gray-200 hover:border-blue-300'
+            ? 'border-[#FF6B6B] ring-2 ring-[#FFB5B5]'
+            : 'border-gray-200 hover:border-[#FFB5B5]'
         "
       >
         <!-- Main Card Area -->
@@ -237,7 +237,7 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
               <input
                 :ref="setEditInputRef"
                 v-model="editingLabel"
-                class="w-full text-xs font-medium text-center border border-blue-400 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                class="w-full text-xs font-medium text-center border border-[#FF6B6B] rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-[#FF6B6B]"
                 @keydown.enter="handleEnter"
                 @blur="commitLabel(cluster)"
               />
@@ -261,8 +261,8 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
             class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer shadow-sm"
             :class="
               selectedClusters.has(cluster.id)
-                ? 'bg-blue-500 border-blue-500 text-white'
-                : 'bg-white/80 border-gray-300 hover:border-blue-400 text-transparent'
+                ? 'bg-[#FF6B6B] border-[#FF6B6B] text-white'
+                : 'bg-white/80 border-gray-300 hover:border-[#FF6B6B] text-transparent'
             "
           >
             <svg

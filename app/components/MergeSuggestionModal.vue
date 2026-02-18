@@ -93,7 +93,7 @@ const getThumbnailUrl = (blob?: Blob) => {
         <!-- Progress Bar -->
         <div class="h-1 bg-gray-100">
           <div
-            class="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-300"
+            class="h-full bg-gradient-to-r from-[#FF6B6B] to-[#FF8E53] transition-all duration-300"
             :style="{ width: `${((currentIndex + 1) / totalPairs) * 100}%` }"
           />
         </div>
@@ -133,7 +133,7 @@ const getThumbnailUrl = (blob?: Blob) => {
             <div class="flex flex-col items-center gap-2.5 flex-1 min-w-0">
               <div class="relative">
                 <div
-                  class="w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 ring-2 ring-blue-100 shadow-lg"
+                  class="w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 ring-2 ring-[#FFD4C4] shadow-lg"
                 >
                   <img
                     v-if="currentPair.clusterA.thumbnail"
@@ -187,7 +187,7 @@ const getThumbnailUrl = (blob?: Blob) => {
             <div class="flex flex-col items-center gap-2.5 flex-1 min-w-0">
               <div class="relative">
                 <div
-                  class="w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 ring-2 ring-indigo-100 shadow-lg"
+                  class="w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 ring-2 ring-[#FFDBC4] shadow-lg"
                 >
                   <img
                     v-if="currentPair.clusterB.thumbnail"
@@ -236,7 +236,7 @@ const getThumbnailUrl = (blob?: Blob) => {
             </button>
             <button
               :disabled="isMerging"
-              class="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:to-indigo-700 active:scale-[0.98] focus:outline-none shadow-md shadow-blue-200/50 transition-all disabled:opacity-50"
+              class="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-[#FF6B6B] to-[#FF8E53] rounded-xl hover:from-[#e55a5a] hover:to-[#e57c48] active:scale-[0.98] focus:outline-none shadow-md shadow-orange-200/50 transition-all disabled:opacity-50"
               @click="handleYes"
             >
               {{ isMerging ? '統合中...' : 'はい' }}

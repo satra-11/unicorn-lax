@@ -25,7 +25,7 @@ const onFolderSelect = async (event: Event) => {
 </script>
 
 <template>
-  <div class="p-6 bg-white rounded-lg shadow-md">
+  <div class="p-6 bg-[#FFFCFA] rounded-lg shadow-md border border-[#FFE8D6]">
     <div
       v-if="(!isProcessing && !currentSession?.status) || currentSession?.status === 'completed'"
       class="text-center"
@@ -75,7 +75,7 @@ const onFolderSelect = async (event: Event) => {
       </div>
 
       <label
-        class="cursor-pointer inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        class="cursor-pointer inline-flex items-center px-4 py-2 bg-[#FF6B6B] text-white rounded hover:bg-[#e55a5a]"
       >
         <span class="mr-2">フォルダを選択</span>
         <input
@@ -96,12 +96,12 @@ const onFolderSelect = async (event: Event) => {
       <h3 class="font-semibold text-lg mb-2 text-black">処理中...</h3>
       <div class="w-full bg-gray-200 rounded-full h-4 mb-2">
         <div
-          class="bg-blue-600 h-4 rounded-full transition-all duration-300"
+          class="bg-[#FF6B6B] h-4 rounded-full transition-all duration-300"
           :style="{ width: `${(progress / total) * 100}%` }"
         ></div>
       </div>
       <p class="text-sm text-gray-600 text-center">{{ progress }} / {{ total }}</p>
-      <p v-if="processingStatus" class="text-sm text-blue-600 text-center mt-2 animate-pulse">
+      <p v-if="processingStatus" class="text-sm text-[#FF6B6B] text-center mt-2 animate-pulse">
         {{ processingStatus }}
       </p>
       <p v-else-if="progress === 0" class="text-sm text-gray-500 text-center mt-2">準備中...</p>

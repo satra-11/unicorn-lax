@@ -97,7 +97,7 @@ defineProps<{
 }
 
 .step-connector-completed {
-  background: linear-gradient(90deg, #3b82f6, #6366f1);
+  background: linear-gradient(90deg, #FF6B6B, #FF8E53);
 }
 
 .step-circle {
@@ -116,16 +116,16 @@ defineProps<{
 }
 
 .step-circle-completed {
-  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  background: linear-gradient(135deg, #FF6B6B, #FF8E53);
   color: white;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
 }
 
 .step-circle-active {
   background: white;
-  color: #3b82f6;
-  border: 2.5px solid #3b82f6;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+  color: #FF6B6B;
+  border: 2.5px solid #FF6B6B;
+  box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.15);
 }
 
 .step-circle-pending {

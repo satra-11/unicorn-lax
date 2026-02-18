@@ -17,7 +17,15 @@ useHead({
     { property: 'og:type', content: 'website' },
     { name: 'twitter:card', content: 'summary' },
   ],
-  link: [{ rel: 'icon', href: '/favicon.ico' }],
+  link: [
+    { rel: 'icon', href: '/favicon.ico' },
+    { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+    { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+    {
+      rel: 'stylesheet',
+      href: 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap',
+    },
+  ],
   htmlAttrs: {
     lang: 'ja',
   },

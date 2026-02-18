@@ -221,7 +221,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 flex flex-col items-center py-12">
+  <div class="min-h-screen bg-[#FFF9F0] flex flex-col items-center py-12">
     <div class="w-full max-w-4xl px-4">
       <!-- LP Style Landing Section -->
       <div
@@ -235,9 +235,9 @@ onBeforeUnmount(() => {
         <!-- Hero Section -->
         <div class="text-center px-4">
           <h1
-            class="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 mb-2 tracking-tight"
+            class="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B6B] to-[#FF8E53] mb-2 tracking-tight"
           >
-            Unicorn Lax
+            🦄 Unicorn Lax
           </h1>
           <p class="text-xl md:text-2xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
             思い出選びは、AIで<span class="font-bold text-gray-800">「楽（Lax）」</span>する。<br />
@@ -259,29 +259,29 @@ onBeforeUnmount(() => {
 
         <!-- Main Action (Uploader) -->
         <div
-          class="max-w-3xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100 my-10"
+          class="max-w-3xl mx-auto bg-[#FFFCFA] rounded-3xl shadow-xl overflow-hidden border border-[#FFE8D6] my-10"
         >
-          <div class="p-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
+          <div class="p-1 bg-gradient-to-r from-[#FF6B6B] via-[#FF8E53] to-[#FFB347]"></div>
           <div class="p-8">
             <div
               v-if="currentSession && currentSession.status === 'completed'"
-              class="mb-8 p-6 bg-blue-50 border border-blue-100 rounded-xl flex flex-col sm:flex-row justify-between items-center gap-4"
+              class="mb-8 p-6 bg-[#FFF5F0] border border-[#FFD4C4] rounded-xl flex flex-col sm:flex-row justify-between items-center gap-4"
             >
               <div class="flex items-center gap-4">
                 <div
-                  class="w-12 h-12 bg-blue-200 text-blue-700 rounded-full flex items-center justify-center flex-shrink-0"
+                  class="w-12 h-12 bg-[#FFD4C4] text-[#FF6B6B] rounded-full flex items-center justify-center flex-shrink-0"
                 >
                   <span class="i-lucide-check w-6 h-6" />
                 </div>
                 <div>
-                  <h3 class="font-bold text-blue-900 text-lg">分析完了</h3>
-                  <p class="text-blue-700">
+                  <h3 class="font-bold text-[#8B4513] text-lg">分析完了</h3>
+                  <p class="text-[#A0522D]">
                     {{ currentSession.totalFiles }} 枚の写真データがあります
                   </p>
                 </div>
               </div>
               <button
-                class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold shadow-lg shadow-blue-200 transition-all transform hover:-translate-y-0.5"
+                class="px-6 py-3 bg-[#FF6B6B] text-white rounded-lg hover:bg-[#e55a5a] font-bold shadow-lg shadow-orange-200 transition-all transform hover:-translate-y-0.5"
                 @click="step = 'step1'"
               >
                 選定をはじめる →
@@ -291,7 +291,7 @@ onBeforeUnmount(() => {
             <PhotoUploader :current-session-id="currentSession?.id" />
 
             <!-- Backup / Restore / Reset Actions -->
-            <div class="pt-6 border-t border-gray-100 flex flex-wrap justify-center gap-4">
+            <div class="pt-6 border-t border-[#FFE8D6] flex flex-wrap justify-center gap-4">
               <button
                 class="px-4 py-2 text-sm bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-lg transition-colors flex items-center gap-2"
                 @click="onExport"
@@ -342,7 +342,7 @@ onBeforeUnmount(() => {
       <!-- Processing State -->
       <div
         v-else-if="step === 'upload' || isProcessing || currentSession?.status === 'processing'"
-        class="bg-white p-8 rounded-2xl shadow-lg mb-6 max-w-2xl mx-auto"
+        class="bg-[#FFFCFA] p-8 rounded-2xl shadow-lg mb-6 max-w-2xl mx-auto"
       >
         <PhotoUploader :current-session-id="currentSession?.id" />
       </div>
@@ -357,10 +357,10 @@ onBeforeUnmount(() => {
         />
 
         <!-- Step 1: 写真の分類 -->
-        <div v-if="step === 'step1' && currentSession" class="bg-white p-6 rounded-xl shadow-md mb-6">
+        <div v-if="step === 'step1' && currentSession" class="bg-[#FFFCFA] p-6 rounded-xl shadow-md mb-6 border border-[#FFE8D6]">
           <div class="flex justify-between items-center mb-4">
             <h2 class="text-xl font-bold text-gray-900">写真の分類</h2>
-            <button class="text-sm text-blue-600 hover:underline" @click="step = 'upload'">
+            <button class="text-sm text-[#FF6B6B] hover:underline" @click="step = 'upload'">
               ← 写真を追加 / アップロード画面へ
             </button>
           </div>
@@ -375,7 +375,7 @@ onBeforeUnmount(() => {
 
           <div class="mt-6 flex justify-end">
             <button
-              class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold shadow-md shadow-blue-200 transition-all transform hover:-translate-y-0.5"
+              class="px-6 py-2.5 bg-[#FF6B6B] text-white rounded-lg hover:bg-[#e55a5a] font-semibold shadow-md shadow-orange-200 transition-all transform hover:-translate-y-0.5"
               @click="goToStep2"
             >
               次へ →
@@ -384,7 +384,7 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Step 2: モード選択 & 枚数決定 -->
-        <div v-if="step === 'step2' && currentSession" class="bg-white p-6 rounded-xl shadow-md mb-6">
+        <div v-if="step === 'step2' && currentSession" class="bg-[#FFFCFA] p-6 rounded-xl shadow-md mb-6 border border-[#FFE8D6]">
           <h2 class="text-xl font-bold text-gray-900 mb-4">モード選択 & 枚数決定</h2>
 
           <!-- Mode Selection -->
@@ -392,7 +392,7 @@ onBeforeUnmount(() => {
             <label class="block text-sm font-medium text-gray-700">モード選択</label>
             <select
               v-model="mode"
-              class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+              class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#FF6B6B] focus:border-[#FF6B6B] sm:text-sm rounded-md"
             >
               <option value="group">グループバランス (複数人のバランス重視)</option>
               <option value="growth">成長記録 (特定の1人の時系列)</option>
@@ -423,7 +423,7 @@ onBeforeUnmount(() => {
           <div class="mt-6 flex justify-center">
             <button
               :disabled="selectedClusters.length === 0 || isSelecting"
-              class="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-lg shadow-blue-200 transition-all transform hover:-translate-y-0.5 text-lg"
+              class="px-8 py-3 bg-gradient-to-r from-[#FF6B6B] to-[#FF8E53] text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-lg shadow-orange-200 transition-all transform hover:-translate-y-0.5 text-lg"
               @click="generateAlbum"
             >
               {{ isSelecting ? '生成中...' : 'アルバム候補を生成' }}
@@ -442,7 +442,7 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Step 3: 完成 -->
-        <div v-if="step === 'step3'" class="bg-white p-6 rounded-xl shadow-md mb-6">
+        <div v-if="step === 'step3'" class="bg-[#FFFCFA] p-6 rounded-xl shadow-md mb-6 border border-[#FFE8D6]">
           <div class="text-center mb-6">
             <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-600 mb-3">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">

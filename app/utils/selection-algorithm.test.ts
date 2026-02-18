@@ -191,50 +191,76 @@ describe('selection-algorithm', () => {
       expect(ids.some((id) => id === 'sa1' || id === 'sb1')).toBe(true)
     })
 
-    it('should balance three subjects with mixed group photos', async () => {
-      // Photos: TwoShot(A+B), TwoShot(B+C), Solo(A), Solo(C). Select 3.
-      const tsAB = {
-        id: 'tsAB',
+    it('should prefer balanced singles over unbalanced pairs (Fairness over Efficiency)', async () => {
+      // "Trap" Scenario:
+      // Target: 4 photos.
+      // Pool: 1 Pair (A+B), Singles A, B, C, D (multiple copies available).
+      //
+      // Old "Efficiency" logic would pick Pair(A+B). Counts: A=1, B=1, C=0, D=0.
+      // Then picking C and D would leave us with 3 photos.
+      // If we pick 4 photos: Pair(A+B), Single(C), Single(D), Single(A or B).
+      // Result Counts: A=2, B=1, C=1, D=1 (Total Faces=5). Unbalanced.
+      //
+      // New "Fairness" logic (StdDev) should realize that picking Pair(A+B) creates imbalance if we can't balance it later.
+      // Wait, if we pick Pair(A+B), variance increases.
+      // Ideally, it should pick Single(A), Single(B), Single(C), Single(D).
+      // Result Counts: A=1, B=1, C=1, D=1 (Total Faces=4). Perfectly Balanced.
+
+      const pairAB = {
+        id: 'pairAB',
         timestamp: 100,
-        faces: [{ descriptor: [0.1] }, { descriptor: [0.5] }],
-      } as unknown as Photo
-      const tsBC = {
-        id: 'tsBC',
-        timestamp: 200,
-        faces: [{ descriptor: [0.5] }, { descriptor: [0.9] }],
-      } as unknown as Photo
-      const soloA = {
-        id: 'soloA',
-        timestamp: 300,
-        faces: [{ descriptor: [0.1] }],
-      } as unknown as Photo
-      const soloC = {
-        id: 'soloC',
-        timestamp: 400,
-        faces: [{ descriptor: [0.9] }],
+        faces: [{ descriptor: [0.1] }, { descriptor: [0.2] }],
       } as unknown as Photo
 
-      const clusterA = { id: 'A', descriptor: [0.1] } as unknown as FaceCluster
-      const clusterB = { id: 'B', descriptor: [0.5] } as unknown as FaceCluster
-      const clusterC = { id: 'C', descriptor: [0.9] } as unknown as FaceCluster
+      const singleA = { id: 'singleA', timestamp: 200, faces: [{ descriptor: [0.1] }] } as unknown as Photo
+      const singleB = { id: 'singleB', timestamp: 300, faces: [{ descriptor: [0.2] }] } as unknown as Photo
+      const singleC = { id: 'singleC', timestamp: 400, faces: [{ descriptor: [0.3] }] } as unknown as Photo
+      const singleD = { id: 'singleD', timestamp: 500, faces: [{ descriptor: [0.4] }] } as unknown as Photo
 
-      mockDB.getAllFromIndex.mockResolvedValue([tsAB, tsBC, soloA, soloC])
+      // Need enough singles to fill the quota if pair is skipped
+      const singleA2 = { ...singleA, id: 'singleA2', timestamp: 600 }
+      const singleB2 = { ...singleB, id: 'singleB2', timestamp: 700 }
+
+      const clusterA = { id: 'A', descriptor: [0.1], config: { similarityThreshold: 0.05 } } as unknown as FaceCluster
+      const clusterB = { id: 'B', descriptor: [0.2], config: { similarityThreshold: 0.05 } } as unknown as FaceCluster
+      const clusterC = { id: 'C', descriptor: [0.3], config: { similarityThreshold: 0.05 } } as unknown as FaceCluster
+      const clusterD = { id: 'D', descriptor: [0.4], config: { similarityThreshold: 0.05 } } as unknown as FaceCluster
+
+      mockDB.getAllFromIndex.mockResolvedValue([pairAB, singleA, singleB, singleC, singleD, singleA2, singleB2])
       // @ts-expect-error -- Mocking return value
-      burstDetection.deduplicateBurstPhotos.mockReturnValue([tsAB, tsBC, soloA, soloC])
+      burstDetection.deduplicateBurstPhotos.mockReturnValue([pairAB, singleA, singleB, singleC, singleD, singleA2, singleB2])
 
       vi.mocked(faceapi.euclideanDistance).mockImplementation((d1, d2) => {
-        // @ts-expect-error -- Mocking implementation with simple diff
+        // @ts-expect-error -- Mocking implementation
         return Math.abs(d1[0] - d2[0])
       })
 
-      const result = await selectGroupBalancedPhotos('session1', [clusterA, clusterB, clusterC], 3)
+      const result = await selectGroupBalancedPhotos(
+        'session1',
+        [clusterA, clusterB, clusterC, clusterD],
+        4,
+      )
 
-      expect(result).toHaveLength(3)
-      // Verify reasonable balance: each subject should appear at least once
-      // With the algorithm: tsAB(A+B) → A=1,B=1,C=0. Then tsBC or soloC for C.
-      // If tsBC: A=1,B=2,C=1. Then soloA: A=2,B=2,C=1.
+      expect(result).toHaveLength(4)
       const ids = result.map((p) => p.id)
-      expect(ids).toContain('tsAB')
+
+      // With K=25 (high penalty for imbalance), it should avoid the pair if it leads to higher stdDev
+      // Pair(A+B) -> Counts 1,1,0,0. Mean=0.5. Var=((0.5^2)*2 + (-0.5^2)*2)/4 = (0.25*2 + 0.25*2)/4 = 1/4 = 0.25. StdDev=0.5.
+      // Score = 2 - 25*0.5 = -10.5.
+      // Single(A) -> Counts 1,0,0,0. Mean=0.25. Var=((0.75^2) + (-0.25^2)*3)/4 = (0.5625 + 0.0625*3)/4 = (0.5625 + 0.1875)/4 = 0.75/4 = 0.1875. StdDev=0.433.
+      // Score = 1 - 25*0.433 = 1 - 10.8 = -9.8.
+      // Single score (-9.8) > Pair score (-10.5).
+      // So it picks a Single first!
+      // Then it picks other Singles to balance StdDev further reduce variance.
+
+      // Expected: No pair, just singles to maintain perfect balance 1,1,1,1.
+      expect(ids).not.toContain('pairAB')
+      expect(ids).toContain('singleC')
+      expect(ids).toContain('singleD')
+      const hasA = ids.some(id => id.startsWith('singleA'))
+      const hasB = ids.some(id => id.startsWith('singleB'))
+      expect(hasA).toBe(true)
+      expect(hasB).toBe(true)
     })
   })
 

@@ -76,35 +76,34 @@ export async function selectGroupBalancedPhotos(
     if (pool.length === 0) break
 
     // Find the minimum subject count to prioritize underrepresented subjects
-    const minCount = Math.min(...Array.from(subjectCounts.values()))
+    // const minCount = Math.min(...Array.from(subjectCounts.values()))
 
     let bestCandidateIndex = -1
     let maxScore = -Infinity
+    const K = 25 // Weight for standard deviation penalty (high value for strict balance)
+    const numSubjects = targetClusters.length
 
     for (let j = 0; j < pool.length; j++) {
       const candidate = pool[j]!
-      let score = 0
 
-      // Check if this candidate contains any underrepresented subject
-      // (a subject whose count equals the current minimum)
-      const hasUnderrepresentedSubject = candidate.subjects.some(
-        (subId) => (subjectCounts.get(subId) || 0) === minCount,
-      )
-
-      // Base score: +1 for each target subject in the photo
-      // Penalty: -1 * current_count for each subject
-      // This makes photos with "rare" subjects more valuable.
+      // Calculate potential new counts if this candidate is selected
+      const tempCounts = new Map(subjectCounts)
       candidate.subjects.forEach((subId) => {
-        score += 1
-        score -= subjectCounts.get(subId) || 0
+        tempCounts.set(subId, (tempCounts.get(subId) || 0) + 1)
       })
 
-      // Bonus for containing underrepresented subjects.
-      // This prevents photos of already-well-represented subjects from
-      // being selected when photos with underrepresented subjects exist.
-      if (hasUnderrepresentedSubject) {
-        score += 2
-      }
+      const newCounts = Array.from(tempCounts.values())
+
+      // Calculate Standard Deviation of the new counts
+      const mean = newCounts.reduce((a, b) => a + b, 0) / numSubjects
+      const variance = newCounts.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / numSubjects
+      const stdDev = Math.sqrt(variance)
+
+      // Score = (Number of Faces) - (K * StdDev)
+      // We want to maximize faces while drastically minimizing imbalance (StdDev).
+      const score = candidate.subjects.length - K * stdDev
+
+
 
       if (score > maxScore) {
         maxScore = score

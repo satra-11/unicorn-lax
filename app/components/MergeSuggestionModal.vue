@@ -102,7 +102,7 @@ const getThumbnailUrl = (blob?: Blob) => {
         <div class="px-6 pt-5 pb-4">
           <div class="flex justify-between items-start">
             <div>
-              <h2 class="text-base font-bold text-gray-900">「この2人は同一人物ですか？」</h2>
+              <h2 class="text-base font-bold text-gray-900">この2つは同じ人ですか？</h2>
             </div>
             <button
               class="text-gray-300 hover:text-gray-500 transition-colors p-1 -mr-1 -mt-1"
@@ -180,7 +180,7 @@ const getThumbnailUrl = (blob?: Blob) => {
               >
                 <span class="text-xs font-bold">{{ similarityPercent }}%</span>
               </div>
-              <span class="text-[10px] text-gray-400 font-medium">類似度</span>
+              <span class="text-[10px] text-gray-400 font-medium">にている度</span>
             </div>
 
             <!-- Cluster B -->
@@ -239,7 +239,7 @@ const getThumbnailUrl = (blob?: Blob) => {
               class="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-[#FF6B6B] to-[#FF8E53] rounded-xl hover:from-[#e55a5a] hover:to-[#e57c48] active:scale-[0.98] focus:outline-none shadow-md shadow-orange-200/50 transition-all disabled:opacity-50"
               @click="handleYes"
             >
-              {{ isMerging ? '統合中...' : 'はい' }}
+              {{ isMerging ? 'まとめています...' : 'はい' }}
             </button>
           </div>
         </div>

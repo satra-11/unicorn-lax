@@ -30,7 +30,7 @@ const onFolderSelect = async (event: Event) => {
       v-if="(!isProcessing && !currentSession?.status) || currentSession?.status === 'completed'"
       class="text-center"
     >
-      <h2 class="text-xl font-bold mb-4 text-black">AIモードの選択</h2>
+      <h2 class="text-xl font-bold mb-4 text-black">読み込みモードをえらぶ</h2>
 
       <!-- Model Selection -->
       <div class="mb-6 max-w-md mx-auto text-left">
@@ -50,8 +50,8 @@ const onFolderSelect = async (event: Event) => {
             />
             <span class="model-card-badge unicorn-badge">推奨</span>
             <div class="model-card-icon">🦄</div>
-            <div class="model-card-name">Unicornモード</div>
-            <div class="model-card-desc">精度を重視し、<br />ほとんどの写真に対応</div>
+            <div class="model-card-name"> しっかりモード</div>
+            <div class="model-card-desc">どんな写真もユニコーンに任せろ！</div>
           </label>
 
           <!-- 🐇 Rabbit Mode -->
@@ -68,8 +68,8 @@ const onFolderSelect = async (event: Event) => {
               @change="setFaceModel('tiny')"
             />
             <div class="model-card-icon">🐇</div>
-            <div class="model-card-name">Rabbitモード</div>
-            <div class="model-card-desc">スピード重視、<br />精度はやや控えめ</div>
+            <div class="model-card-name">さくさくモード</div>
+            <div class="model-card-desc">早いけど、おちょこちょい...</div>
           </label>
         </div>
       </div>
@@ -77,7 +77,7 @@ const onFolderSelect = async (event: Event) => {
       <label
         class="cursor-pointer inline-flex items-center px-4 py-2 bg-[#FF6B6B] text-white rounded hover:bg-[#e55a5a]"
       >
-        <span class="mr-2">フォルダを選択</span>
+        <span class="mr-2">写真フォルダをえらぶ</span>
         <input
           type="file"
           webkitdirectory
@@ -93,7 +93,7 @@ const onFolderSelect = async (event: Event) => {
       v-if="isProcessing || (currentSession && currentSession.status === 'processing')"
       class="mt-4"
     >
-      <h3 class="font-semibold text-lg mb-2 text-black">処理中...</h3>
+      <h3 class="font-semibold text-lg mb-2 text-black">写真を読み込んでいます...</h3>
       <div class="w-full bg-gray-200 rounded-full h-4 mb-2">
         <div
           class="bg-[#FF6B6B] h-4 rounded-full transition-all duration-300"
@@ -104,7 +104,7 @@ const onFolderSelect = async (event: Event) => {
       <p v-if="processingStatus" class="text-sm text-[#FF6B6B] text-center mt-2 animate-pulse">
         {{ processingStatus }}
       </p>
-      <p v-else-if="progress === 0" class="text-sm text-gray-500 text-center mt-2">準備中...</p>
+      <p v-else-if="progress === 0" class="text-sm text-gray-500 text-center mt-2">準備しています...</p>
     </div>
   </div>
 </template>

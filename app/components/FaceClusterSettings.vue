@@ -135,7 +135,7 @@ const getPhotoUrl = (photo: Photo) => {
       >
         <div class="flex justify-between items-center p-3 border-b sticky top-0 bg-white z-20">
           <h2 class="text-lg font-bold text-gray-900">
-            {{ isUnrecognized ? '未検出の画像 (Unrecognized Photos)' : `編集: ${cluster.label}` }}
+            {{ isUnrecognized ? '顔が見つからなかった写真' : `${cluster.label} の写真` }}
           </h2>
           <button
             class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
@@ -175,12 +175,12 @@ const getPhotoUrl = (photo: Photo) => {
             <div class="flex justify-between items-end mb-3">
               <div>
                 <h3 class="text-sm font-semibold text-gray-900">
-                  {{ isUnrecognized ? '画像一覧' : '分類された写真 (内訳)' }}
+                  {{ isUnrecognized ? '写真の一覧' : 'このグループの写真' }}
                 </h3>
                 <p v-if="!isUnrecognized" class="text-xs text-gray-500 mt-1">
-                  間違って分類されている写真があれば、左上のアイコンから別の人物へ移動できます。
+                  違う人の写真がまざっていたら、写真の左上のボタンから正しい人のグループへ移動できます。
                 </p>
-                <p v-else class="text-xs text-gray-500 mt-1">顔が検出されなかった画像です。</p>
+                <p v-else class="text-xs text-gray-500 mt-1">顔が見つからなかった写真です。</p>
               </div>
             </div>
 
@@ -245,7 +245,7 @@ const getPhotoUrl = (photo: Photo) => {
             class="px-4 py-2 text-sm font-medium text-white bg-gray-900 border border-transparent rounded-md hover:bg-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 transition-colors shadow-sm"
             @click="saveSettings"
           >
-            設定を保存
+            保存する
           </button>
         </div>
       </div>
@@ -260,10 +260,10 @@ const getPhotoUrl = (photo: Photo) => {
         @click="showMoveModal = false"
       ></div>
       <div class="relative bg-white rounded-lg shadow-xl max-w-sm w-full p-6 z-10">
-        <h3 class="text-lg font-bold text-gray-900 mb-4">別の人物へ移動</h3>
+        <h3 class="text-lg font-bold text-gray-900 mb-4">別の人のグループへ移動</h3>
         <p class="text-sm text-gray-600 mb-4">
-          選択した写真を別の人物グループへ移動します。<br />
-          移動後、両方のグループで顔モデルが再学習されます。
+          選んだ写真を別の人のグループへ移します。<br />
+          移動すると、自動的にグループが調整されます。
         </p>
 
         <div class="space-y-2 max-h-60 overflow-y-auto mb-4 border rounded p-2">
@@ -280,7 +280,7 @@ const getPhotoUrl = (photo: Photo) => {
             <span class="truncate font-medium">{{ target.label }}</span>
           </button>
           <div v-if="targetClusters.length === 0" class="text-center text-gray-400 py-4 text-sm">
-            移動可能な他のグループがありません。
+            移動できるグループがありません。
           </div>
         </div>
 

@@ -25,9 +25,9 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const isConfirmed = ref(false)
 
 const stepDefs = [
-  { label: 'ステップ1', description: '写真の分類' },
-  { label: 'ステップ2', description: 'モード選択 & 枚数決定' },
-  { label: 'ステップ3', description: '完成' },
+  { label: 'ステップ1', description: '人物の確認・整理' },
+  { label: 'ステップ2', description: 'アルバムの設定' },
+  { label: 'ステップ3', description: 'できあがり！' },
 ]
 
 const currentStepNumber = computed<1 | 2 | 3>(() => {
@@ -128,7 +128,7 @@ const goBackToStep2 = () => {
 }
 
 const onResetDb = async () => {
-  if (confirm('全てのデータを消去しますか？この操作は取り消せません。')) {
+  if (confirm('すべてのデータを消しますか？一度消すと元に戻せません。')) {
     await clearExistingData()
     window.location.reload()
   }
@@ -137,7 +137,7 @@ const onResetDb = async () => {
 const onClearPhotos = async () => {
   if (
     confirm(
-      '写真データのみを削除しますか？\n分類設定（クラスター）は保持されますが、画像は再スキャンが必要になります。',
+      '写真だけを削除しますか？\n人物グループの設定はそのまま残りますが、写真の読み込みをやり直す必要があります。',
     )
   ) {
     await clearPhotos()
@@ -159,7 +159,7 @@ const onExport = async () => {
     URL.revokeObjectURL(url)
   } catch (e) {
     console.error('Export failed:', e)
-    alert('エクスポートに失敗しました。')
+    alert('バックアップの保存に失敗しました。')
   }
 }
 
@@ -172,7 +172,7 @@ const onImportFile = async (event: Event) => {
   const file = target.files?.[0]
   if (!file) return
 
-  if (!confirm('現在のデータをすべて上書きしてインポートしますか？この操作は取り消せません。')) {
+  if (!confirm('保存済みのデータをすべて入れ替えますか？一度入れ替えると元に戻せません。')) {
     target.value = '' // reset
     return
   }
@@ -182,11 +182,11 @@ const onImportFile = async (event: Event) => {
     try {
       const json = e.target?.result as string
       await importDatabase(json)
-      alert('インポートが完了しました。ページをリロードします。')
+      alert('データの読み込みが完了しました。画面を更新します。')
       window.location.reload()
     } catch (error) {
       console.error('Import failed:', error)
-      alert('インポートに失敗しました。ファイル形式を確認してください。')
+      alert('データの読み込みに失敗しました。正しいバックアップファイルか確認してください。')
     }
   }
   reader.readAsText(file)
@@ -239,9 +239,8 @@ onBeforeUnmount(() => {
           >
             🦄 Unicorn Lax
           </h1>
-          <p class="text-xl md:text-2xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-            思い出選びは、AIで<span class="font-bold text-gray-800">「楽（Lax）」</span>する。<br />
-            プライバシー重視。すべての処理はブラウザ内で完結します。
+          <p class="text-md md:text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
+            思い出選びは、AIで<span class="font-bold text-gray-800">「楽（Lax）」</span>する。
           </p>
           <div
             class="inline-flex items-center gap-2 mb-4 px-4 py-1.5 bg-amber-50 border border-amber-200 rounded-full"
@@ -274,7 +273,7 @@ onBeforeUnmount(() => {
                   <span class="i-lucide-check w-6 h-6" />
                 </div>
                 <div>
-                  <h3 class="font-bold text-[#8B4513] text-lg">分析完了</h3>
+                  <h3 class="font-bold text-[#8B4513] text-lg">写真の読み込み完了</h3>
                   <p class="text-[#A0522D]">
                     {{ currentSession.totalFiles }} 枚の写真データがあります
                   </p>
@@ -284,7 +283,7 @@ onBeforeUnmount(() => {
                 class="px-6 py-3 bg-[#FF6B6B] text-white rounded-lg hover:bg-[#e55a5a] font-bold shadow-lg shadow-orange-200 transition-all transform hover:-translate-y-0.5"
                 @click="step = 'step1'"
               >
-                選定をはじめる →
+                アルバムづくりをはじめる →
               </button>
             </div>
 
@@ -305,7 +304,7 @@ onBeforeUnmount(() => {
                 @click="triggerImport"
               >
                 <span class="i-lucide-upload w-4 h-4" />
-                データ復元
+                バックアップから復元
                 <input
                   ref="fileInput"
                   type="file"
@@ -323,13 +322,13 @@ onBeforeUnmount(() => {
                 class="px-4 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                 @click="onClearPhotos"
               >
-                写真のみ削除
+                写真だけ削除
               </button>
               <button
                 class="px-4 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                 @click="onResetDb"
               >
-                全データ初期化
+                すべてのデータを削除
               </button>
             </div>
           </div>
@@ -359,13 +358,13 @@ onBeforeUnmount(() => {
         <!-- Step 1: 写真の分類 -->
         <div v-if="step === 'step1' && currentSession" class="bg-[#FFFCFA] p-6 rounded-xl shadow-md mb-6 border border-[#FFE8D6]">
           <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-bold text-gray-900">写真の分類</h2>
+            <h2 class="text-xl font-bold text-gray-900">人物の確認・整理</h2>
             <button class="text-sm text-[#FF6B6B] hover:underline" @click="step = 'upload'">
-              ← 写真を追加 / アップロード画面へ
+              ← 写真を追加する
             </button>
           </div>
           <p class="mb-4 text-gray-600">
-            AIが検出した人物グループを確認し、必要に応じて写真を正しいグループに移動してください。
+            AIが自動で写真に写っている人を見分けました。間違いがあれば、写真を正しい人のグループに移動してください。
           </p>
 
           <FaceClusterSelector
@@ -385,23 +384,23 @@ onBeforeUnmount(() => {
 
         <!-- Step 2: モード選択 & 枚数決定 -->
         <div v-if="step === 'step2' && currentSession" class="bg-[#FFFCFA] p-6 rounded-xl shadow-md mb-6 border border-[#FFE8D6]">
-          <h2 class="text-xl font-bold text-gray-900 mb-4">モード選択 & 枚数決定</h2>
+          <h2 class="text-xl font-bold text-gray-900 mb-4">アルバムの設定</h2>
 
           <!-- Mode Selection -->
           <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700">モード選択</label>
+            <label class="block text-sm font-medium text-gray-700">アルバムのタイプ</label>
             <select
               v-model="mode"
               class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#FF6B6B] focus:border-[#FF6B6B] sm:text-sm rounded-md"
             >
-              <option value="group">グループバランス (複数人のバランス重視)</option>
-              <option value="growth">成長記録 (特定の1人の時系列)</option>
+              <option value="group">みんなバランスよく（複数の子を均等に選びます）</option>
+              <option value="growth">ひとりの成長記録（1人の子の写真を時間順に選びます）</option>
             </select>
           </div>
 
           <!-- Target Count -->
           <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700">選定枚数 (目標)</label>
+            <label class="block text-sm font-medium text-gray-700">選ぶ写真の枚数（だいたいの目安）</label>
             <input
               v-model.number="targetCount"
               type="number"
@@ -410,7 +409,7 @@ onBeforeUnmount(() => {
           </div>
 
           <!-- Face/Group Selection -->
-          <p class="mb-4 text-gray-600">アルバムに入れたい人物を選択してください。</p>
+          <p class="mb-4 text-gray-600">アルバムに載せたい人を選んでください。</p>
 
           <FaceClusterSelector
             :session="currentSession"
@@ -426,7 +425,7 @@ onBeforeUnmount(() => {
               class="px-8 py-3 bg-gradient-to-r from-[#FF6B6B] to-[#FF8E53] text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-lg shadow-orange-200 transition-all transform hover:-translate-y-0.5 text-lg"
               @click="generateAlbum"
             >
-              {{ isSelecting ? '生成中...' : 'アルバム候補を生成' }}
+              {{ isSelecting ? '生成中...' : '写真をえらぶ' }}
             </button>
           </div>
 
@@ -436,7 +435,7 @@ onBeforeUnmount(() => {
               class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
               @click="goBackToStep1"
             >
-              ← 分類に戻る
+              ← 人物の確認に戻る
             </button>
           </div>
         </div>
@@ -449,8 +448,8 @@ onBeforeUnmount(() => {
                 <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
               </svg>
             </div>
-            <h2 class="text-2xl font-bold text-gray-900">選定完了</h2>
-            <p class="mt-1 text-gray-600">{{ confirmedPhotos.length }} 枚の写真を確定しました。</p>
+            <h2 class="text-2xl font-bold text-gray-900">アルバムのできあがり！</h2>
+            <p class="mt-1 text-gray-600">{{ confirmedPhotos.length }} 枚の写真をえらびました！</p>
           </div>
 
           <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -483,9 +482,9 @@ onBeforeUnmount(() => {
                 <span class="i-lucide-download w-5 h-5" />
               </div>
               <div class="flex-1">
-                <h4 class="font-bold text-amber-900 text-sm">バックアップを取りましょう</h4>
+                <h4 class="font-bold text-amber-900 text-sm">データを保存しておきましょう</h4>
                 <p class="text-amber-700 text-sm mt-1">
-                  選定結果を保存するために、バックアップファイルをダウンロードすることをおすすめします。
+                  結果を残しておくために、バックアップファイルを保存しておくのがおすすめです。
                 </p>
                 <button
                   class="mt-3 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm font-semibold transition-colors inline-flex items-center gap-2"
@@ -503,7 +502,7 @@ onBeforeUnmount(() => {
               class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
               @click="goBackToStep2"
             >
-              ← 確認画面に戻る
+              ← 設定画面に戻る
             </button>
           </div>
         </div>

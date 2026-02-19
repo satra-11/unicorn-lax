@@ -69,7 +69,7 @@ const onFolderSelect = async (event: Event) => {
             />
             <div class="model-card-icon">🐇</div>
             <div class="model-card-name">さくさくモード</div>
-            <div class="model-card-desc">早いけど、おちょこちょい...</div>
+            <div class="model-card-desc">早いけど、おっちょこちょい...</div>
           </label>
         </div>
       </div>

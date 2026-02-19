@@ -207,8 +207,7 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
 </script>
 
 <template>
-  <div class="mt-8">
-    <h3 class="text-lg font-semibold text-black mb-4">見つかった人</h3>
+  
 
     <div v-if="isLoading" class="text-center py-4">人物を整理しています...</div>
     <div v-else class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
@@ -306,5 +305,4 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
       @close="showSettings = false"
       @update="handleSettingsUpdate"
     />
-  </div>
 </template>

@@ -2,6 +2,7 @@
 import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue'
 import { usePhotoProcessor } from '~/composables/usePhotoProcessor'
 import FaceClusterSelector from '~/components/FaceClusterSelector.vue'
+import AlbumModeSelector from '~/components/AlbumModeSelector.vue'
 
 import StepIndicator from '~/components/StepIndicator.vue'
 import type { FaceCluster, Photo } from '~/utils/types'
@@ -211,6 +212,22 @@ watch(step, (newStep) => {
   }
 })
 
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return ''
+  try {
+    const d = new Date(dateStr)
+    return d.toLocaleString('ja-JP', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  } catch (e) {
+    return dateStr
+  }
+}
+
 onBeforeUnmount(() => {
   for (const url of blobUrls.value.values()) {
     URL.revokeObjectURL(url)
@@ -365,8 +382,10 @@ onBeforeUnmount(() => {
           <p class="mb-4 text-gray-600">
             AIが自動で写真に写っている人を見分けました。間違いがあれば、写真を正しい人のグループに移動してください。
           </p>
-
-          <FaceClusterSelector :session="currentSession" hide-selection />
+          <div class="mt-8">
+            <h3 class="text-lg font-semibold text-black mb-4">見つかった人</h3>
+            <FaceClusterSelector :session="currentSession" hide-selection />
+          </div>
 
           <div class="mt-6 flex justify-end">
             <button
@@ -387,37 +406,41 @@ onBeforeUnmount(() => {
 
           <!-- Mode Selection -->
           <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700">アルバムのタイプ</label>
-            <select
-              v-model="mode"
-              class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#FF6B6B] focus:border-[#FF6B6B] sm:text-sm rounded-md"
-            >
-              <option value="group">みんなバランスよく（複数の子を均等に選びます）</option>
-              <option value="growth">ひとりの成長記録（1人の子の写真を時間順に選びます）</option>
-            </select>
+            <h3 class="text-lg font-semibold text-black mb-4">アルバムのタイプ</h3>
+            <AlbumModeSelector v-model="mode" />
           </div>
 
           <!-- Target Count -->
           <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700"
-              >選ぶ写真の枚数（だいたいの目安）</label
-            >
-            <input
-              v-model.number="targetCount"
-              type="number"
-              class="mt-1 block w-full pl-3 pr-10 py-2 border-gray-300 rounded-md"
-            />
+            <h3 class="text-lg font-semibold text-black mb-4">選ぶ写真の枚数</h3>
+            <div class="flex items-center gap-4">
+              <input
+                v-model.number="targetCount"
+                type="range"
+                min="5"
+                max="50"
+                step="1"
+                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#FF6B6B]"
+              />
+              <span class="text-xl font-bold text-[#FF6B6B] w-12 text-right">{{ targetCount }}枚</span>
+            </div>
+            <div class="flex justify-between text-xs text-gray-500 mt-1 px-1">
+              <span>5枚</span>
+              <span>25枚</span>
+              <span>50枚</span>
+            </div>
           </div>
 
           <!-- Face/Group Selection -->
-          <p class="mb-4 text-gray-600">アルバムに載せたい人を選んでください。</p>
-
+          <div class="mt-8">
+            <h3 class="text-lg font-semibold text-black mb-4">人物を選択</h3>
           <FaceClusterSelector
             :session="currentSession"
             :single-selection="mode === 'growth'"
             selection-only
             @select="onFacesSelected"
           />
+          </div>
 
           <!-- Back button -->
           <div class="mt-6 flex justify-between">
@@ -483,7 +506,7 @@ onBeforeUnmount(() => {
                 }}</span>
               </div>
               <div class="p-2 text-xs text-gray-600 bg-white truncate">
-                {{ photo.dateStr }}
+                {{ formatDate(photo.dateStr) }}
               </div>
             </div>
           </div>

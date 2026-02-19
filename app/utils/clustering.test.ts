@@ -10,7 +10,13 @@ import * as faceapi from 'face-api.js'
 import type { Photo, FaceCluster } from './types'
 
 // Mock dependencies
-vi.mock('./db')
+vi.mock('./db', () => ({
+  getDB: vi.fn(),
+  getAllClusters: vi.fn(),
+  saveCluster: vi.fn(),
+  deleteCluster: vi.fn(),
+}))
+
 vi.mock('face-api.js', () => ({
   euclideanDistance: vi.fn(),
 }))
@@ -36,14 +42,15 @@ describe('clustering', () => {
   })
 
   describe('clusterFaces', () => {
-    it('should create new clusters for unique faces', async () => {
+    it('should create new clusters for unique faces with "人物" label', async () => {
       const p1 = { id: 'p1', faces: [{ descriptor: [0.1], box: {} }] } as unknown as Photo
       const p2 = { id: 'p2', faces: [{ descriptor: [0.9], box: {} }] } as unknown as Photo // Far from p1
 
       mockDB.getAllFromIndex.mockResolvedValue([p1, p2])
 
       // Mock euclideanDistance
-      vi.mocked(faceapi.euclideanDistance).mockImplementation((d1, d2) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(faceapi.euclideanDistance as any).mockImplementation((d1: any, d2: any) => {
         // @ts-expect-error -- Mocking implementation with simple diff
         return Math.abs(d1[0] - d2[0])
       })
@@ -54,8 +61,10 @@ describe('clustering', () => {
       const result = await clusterFaces('session1')
 
       expect(result).toHaveLength(2)
-      expect(result[0]!.photoIds).toContain('p1') // Sort order might vary by size, both 1
-      expect(result[1]!.photoIds).toContain('p2') // But distinct
+      expect(result[0]!.photoIds).toContain('p1')
+      expect(result[0]!.label).toMatch(/^人物 \d+$/)
+      expect(result[1]!.photoIds).toContain('p2')
+      expect(result[1]!.label).toMatch(/^人物 \d+$/)
 
       expect(db.saveCluster).toHaveBeenCalledTimes(2)
     })
@@ -65,7 +74,9 @@ describe('clustering', () => {
       const p2 = { id: 'p2', faces: [{ descriptor: [0.15], box: {} }] } as unknown as Photo // Close to p1
 
       mockDB.getAllFromIndex.mockResolvedValue([p1, p2])
-      vi.mocked(faceapi.euclideanDistance).mockImplementation((d1, d2) => {
+      mockDB.getAllFromIndex.mockResolvedValue([p1, p2])
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(faceapi.euclideanDistance as any).mockImplementation((d1: any, d2: any) => {
         // @ts-expect-error -- Mocking implementation with simple diff
         return Math.abs(d1[0] - d2[0])
       })
@@ -93,7 +104,9 @@ describe('clustering', () => {
       const p1 = { id: 'p1', faces: [{ descriptor: [0.15], box: {} }] } as unknown as Photo
 
       mockDB.getAllFromIndex.mockResolvedValue([p1])
-      vi.mocked(faceapi.euclideanDistance).mockImplementation((d1, d2) => {
+      mockDB.getAllFromIndex.mockResolvedValue([p1])
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(faceapi.euclideanDistance as any).mockImplementation((d1: any, d2: any) => {
         // @ts-expect-error -- Mocking implementation with simple diff
         return Math.abs(d1[0] - d2[0])
       })
@@ -110,7 +123,8 @@ describe('clustering', () => {
 
   describe('findSimilarClusterPairs', () => {
     it('should find pairs within the suggestion range', () => {
-      vi.mocked(faceapi.euclideanDistance).mockReturnValue(0.42) // Between 0.4 and 0.44
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(faceapi.euclideanDistance as any).mockReturnValue(0.42) // Between 0.4 and 0.44
 
       const clusterA: FaceCluster = {
         id: 'a',
@@ -136,7 +150,8 @@ describe('clustering', () => {
     })
 
     it('should not include pairs outside the suggestion range', () => {
-      vi.mocked(faceapi.euclideanDistance).mockReturnValue(0.7) // Above 0.44
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(faceapi.euclideanDistance as any).mockReturnValue(0.7) // Above 0.44
 
       const clusterA: FaceCluster = {
         id: 'a',
@@ -156,7 +171,8 @@ describe('clustering', () => {
     })
 
     it('should exclude unrecognized and empty clusters', () => {
-      vi.mocked(faceapi.euclideanDistance).mockReturnValue(0.42)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(faceapi.euclideanDistance as any).mockReturnValue(0.42)
 
       const clusterA: FaceCluster = {
         id: 'unrecognized',
@@ -182,7 +198,8 @@ describe('clustering', () => {
     })
 
     it('should sort pairs by distance ascending', () => {
-      vi.mocked(faceapi.euclideanDistance)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(faceapi.euclideanDistance as any)
         .mockReturnValueOnce(0.43)
         .mockReturnValueOnce(0.41)
         .mockReturnValueOnce(0.42)
@@ -233,7 +250,7 @@ describe('clustering', () => {
     it('should prefer user-given label over auto-generated', async () => {
       const keep: FaceCluster = {
         id: 'keep',
-        label: 'Person 1', // auto-generated
+        label: '人物 1', // auto-generated
         descriptor: new Float32Array([0.1]),
         photoIds: ['p1'],
       }

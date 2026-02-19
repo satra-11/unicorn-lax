@@ -377,7 +377,7 @@ onBeforeUnmount(() => {
             <h2 class="text-2xl font-bold text-gray-900">人物の確認・整理</h2>
           </div>
           <p class="mb-4 text-gray-600">
-            AIが自動で写真に写っている人を見分けました。間違いがあれば、写真を正しい人のグループに移動してください。
+            AIが自動で写真を見分けました。間違いがあれば、写真を正しい人のグループに移動してください。
           </p>
           <div class="mt-8">
             <h3 class="text-lg font-semibold text-black mb-4">見つかった人</h3>
@@ -407,7 +407,7 @@ onBeforeUnmount(() => {
         >
           <h2 class="text-2xl font-bold text-gray-900 mb-4">アルバムの設定</h2>
           <p class="mb-4 text-gray-600">
-            AIが自動で写真に写っている人を見分けました。間違いがあれば、写真を正しい人のグループに移動してください。
+            アルバムのタイプ、写真の枚数、写る人物を設定してください。
           </p>
 
           <!-- Mode Selection -->

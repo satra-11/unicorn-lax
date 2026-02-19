@@ -62,7 +62,7 @@ export async function clusterFaces(sessionId: string): Promise<FaceCluster[]> {
     }
   }
 
-  const trainedClusters = clusters.filter((c) => !/^Person \d+$/.test(c.label))
+  const trainedClusters = clusters.filter((c) => !/^(Person|人物) \d+$/.test(c.label))
   console.log(
     `[Cluster] Processing ${facesToCluster.length} faces against ${clusters.length} clusters (${trainedClusters.length} user-trained).`,
   )
@@ -112,7 +112,7 @@ export async function clusterFaces(sessionId: string): Promise<FaceCluster[]> {
 
       const newCluster: FaceCluster = {
         id: crypto.randomUUID(),
-        label: `Person ${clusters.length + 1}`,
+        label: `人物 ${clusters.length + 1}`,
         descriptor: face.descriptor,
         photoIds: [face.photoId],
         thumbnail: face.thumbnail,
@@ -134,7 +134,7 @@ export async function clusterFaces(sessionId: string): Promise<FaceCluster[]> {
   // 1. Clusters with at least one photo from THIS session (auto-matched or manually assigned)
   // 2. User-trained clusters (custom-named, non-default label) — shown even with 0 photos
   //    so users can manually move photos into them after re-upload
-  const isUserTrained = (c: FaceCluster) => c.label && !/^Person \d+$/.test(c.label)
+  const isUserTrained = (c: FaceCluster) => c.label && !/^(Person|人物) \d+$/.test(c.label)
 
   const relevantClusters = clusters.filter(
     (c) => c.photoIds.some((pid) => sessionPhotoIds.has(pid)) || isUserTrained(c),
@@ -411,7 +411,7 @@ export async function mergeClusters(keepClusterId: string, removeClusterId: stri
     throw new Error('One or both clusters not found for merge')
   }
 
-  const isAutoLabel = (label: string) => /^Person \d+$/.test(label)
+  const isAutoLabel = (label: string) => /^(Person|人物) \d+$/.test(label)
 
   // Prefer user-given label
   if (isAutoLabel(keep.label) && !isAutoLabel(remove.label)) {

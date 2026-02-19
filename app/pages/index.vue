@@ -295,7 +295,6 @@ onBeforeUnmount(() => {
                 class="px-4 py-2 text-sm bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-lg transition-colors flex items-center gap-2"
                 @click="onExport"
               >
-                <span class="i-lucide-download w-4 h-4" />
                 バックアップ保存
               </button>
 
@@ -303,7 +302,6 @@ onBeforeUnmount(() => {
                 class="px-4 py-2 text-sm bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-lg transition-colors flex items-center gap-2 relative overflow-hidden"
                 @click="triggerImport"
               >
-                <span class="i-lucide-upload w-4 h-4" />
                 バックアップから復元
                 <input
                   ref="fileInput"
@@ -486,7 +484,6 @@ onBeforeUnmount(() => {
                   class="mt-3 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm font-semibold transition-colors inline-flex items-center gap-2"
                   @click="onExport"
                 >
-                  <span class="i-lucide-download w-4 h-4" />
                   バックアップ保存
                 </button>
               </div>

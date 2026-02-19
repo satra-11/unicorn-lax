@@ -57,7 +57,6 @@ onMounted(async () => {
     if (lastSession && lastSession.status === 'completed') {
       console.log('Restoring last session:', lastSession.id)
       currentSession.value = lastSession
-      step.value = 'step1'
     }
   } catch (e) {
     console.error('Failed to restore session:', e)
@@ -70,8 +69,8 @@ onBeforeUnmount(() => {
 
 watch(
   () => currentSession.value?.status,
-  (newStatus) => {
-    if (newStatus === 'completed') {
+  (newStatus, oldStatus) => {
+    if (newStatus === 'completed' && oldStatus === 'processing') {
       step.value = 'step1'
     }
   },

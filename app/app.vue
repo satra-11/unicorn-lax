@@ -34,6 +34,11 @@ useHead({
 
 <template>
   <UApp>
-    <NuxtPage />
+    <div class="flex flex-col min-h-screen bg-[#FFF9F0]">
+      <AppHeader />
+      <main class="flex-grow">
+        <NuxtPage />
+      </main>
+    </div>
   </UApp>
 </template>

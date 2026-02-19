@@ -108,9 +108,7 @@ const generateAlbum = async () => {
   }
 }
 
-
 const confirmedPhotos = computed(() => generatedPhotos.value.filter((p) => !p.excluded))
-
 
 const goToStep2 = () => {
   step.value = 'step2'
@@ -354,7 +352,10 @@ onBeforeUnmount(() => {
         />
 
         <!-- Step 1: 写真の分類 -->
-        <div v-if="step === 'step1' && currentSession" class="bg-[#FFFCFA] p-6 rounded-xl shadow-md mb-6 border border-[#FFE8D6]">
+        <div
+          v-if="step === 'step1' && currentSession"
+          class="bg-[#FFFCFA] p-6 rounded-xl shadow-md mb-6 border border-[#FFE8D6]"
+        >
           <div class="flex justify-between items-center mb-4">
             <h2 class="text-xl font-bold text-gray-900">人物の確認・整理</h2>
             <button class="text-sm text-[#FF6B6B] hover:underline" @click="step = 'upload'">
@@ -365,10 +366,7 @@ onBeforeUnmount(() => {
             AIが自動で写真に写っている人を見分けました。間違いがあれば、写真を正しい人のグループに移動してください。
           </p>
 
-          <FaceClusterSelector
-            :session="currentSession"
-            hide-selection
-          />
+          <FaceClusterSelector :session="currentSession" hide-selection />
 
           <div class="mt-6 flex justify-end">
             <button
@@ -381,7 +379,10 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Step 2: モード選択 & 枚数決定 -->
-        <div v-if="step === 'step2' && currentSession" class="bg-[#FFFCFA] p-6 rounded-xl shadow-md mb-6 border border-[#FFE8D6]">
+        <div
+          v-if="step === 'step2' && currentSession"
+          class="bg-[#FFFCFA] p-6 rounded-xl shadow-md mb-6 border border-[#FFE8D6]"
+        >
           <h2 class="text-xl font-bold text-gray-900 mb-4">アルバムの設定</h2>
 
           <!-- Mode Selection -->
@@ -398,7 +399,9 @@ onBeforeUnmount(() => {
 
           <!-- Target Count -->
           <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700">選ぶ写真の枚数（だいたいの目安）</label>
+            <label class="block text-sm font-medium text-gray-700"
+              >選ぶ写真の枚数（だいたいの目安）</label
+            >
             <input
               v-model.number="targetCount"
               type="number"
@@ -424,7 +427,7 @@ onBeforeUnmount(() => {
             >
               ← 人物の確認に戻る
             </button>
-             <button
+            <button
               :disabled="selectedClusters.length === 0 || isSelecting"
               class="px-6 py-2.5 bg-gradient-to-r from-[#FF6B6B] to-[#FF8E53] text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-lg shadow-orange-200 transition-all transform hover:-translate-y-0.5"
               @click="generateAlbum"
@@ -435,11 +438,25 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Step 3: 完成 -->
-        <div v-if="step === 'step3'" class="bg-[#FFFCFA] p-6 rounded-xl shadow-md mb-6 border border-[#FFE8D6]">
+        <div
+          v-if="step === 'step3'"
+          class="bg-[#FFFCFA] p-6 rounded-xl shadow-md mb-6 border border-[#FFE8D6]"
+        >
           <div class="text-center mb-6">
-            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-600 mb-3">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+            <div
+              class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-600 mb-3"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-8 w-8"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clip-rule="evenodd"
+                />
               </svg>
             </div>
             <h2 class="text-2xl font-bold text-gray-900">アルバムのできあがり！</h2>
@@ -452,7 +469,9 @@ onBeforeUnmount(() => {
               :key="photo.id"
               class="border rounded-lg overflow-hidden"
             >
-              <div class="aspect-video bg-gray-100 flex items-center justify-center overflow-hidden">
+              <div
+                class="aspect-video bg-gray-100 flex items-center justify-center overflow-hidden"
+              >
                 <img
                   v-if="getThumbnailUrl(photo)"
                   :src="getThumbnailUrl(photo)"
@@ -472,7 +491,9 @@ onBeforeUnmount(() => {
           <!-- Backup Prompt -->
           <div class="mt-8 p-5 bg-amber-50 border border-amber-200 rounded-xl">
             <div class="flex items-start gap-3">
-              <div class="flex-shrink-0 w-10 h-10 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center">
+              <div
+                class="flex-shrink-0 w-10 h-10 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center"
+              >
                 <span class="i-lucide-download w-5 h-5" />
               </div>
               <div class="flex-1">

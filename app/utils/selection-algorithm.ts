@@ -103,8 +103,6 @@ export async function selectGroupBalancedPhotos(
       // We want to maximize faces while drastically minimizing imbalance (StdDev).
       const score = candidate.subjects.length - K * stdDev
 
-
-
       if (score > maxScore) {
         maxScore = score
         bestCandidateIndex = j

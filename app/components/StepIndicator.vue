@@ -13,11 +13,7 @@ defineProps<{
 
 <template>
   <div class="step-indicator">
-    <div
-      v-for="(stepDef, index) in steps"
-      :key="index"
-      class="step-item"
-    >
+    <div v-for="(stepDef, index) in steps" :key="index" class="step-item">
       <!-- Connector line (before) -->
       <div
         v-if="index > 0"
@@ -97,7 +93,7 @@ defineProps<{
 }
 
 .step-connector-completed {
-  background: linear-gradient(90deg, #FF6B6B, #FF8E53);
+  background: linear-gradient(90deg, #ff6b6b, #ff8e53);
 }
 
 .step-circle {
@@ -116,15 +112,15 @@ defineProps<{
 }
 
 .step-circle-completed {
-  background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+  background: linear-gradient(135deg, #ff6b6b, #ff8e53);
   color: white;
   box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
 }
 
 .step-circle-active {
   background: white;
-  color: #FF6B6B;
-  border: 2.5px solid #FF6B6B;
+  color: #ff6b6b;
+  border: 2.5px solid #ff6b6b;
   box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.15);
 }
 

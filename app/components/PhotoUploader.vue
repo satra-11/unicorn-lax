@@ -50,7 +50,7 @@ const onFolderSelect = async (event: Event) => {
             />
             <span class="model-card-badge unicorn-badge">推奨</span>
             <div class="model-card-icon">🦄</div>
-            <div class="model-card-name"> しっかりモード</div>
+            <div class="model-card-name">しっかりモード</div>
             <div class="model-card-desc">どんな写真もユニコーンに任せろ！</div>
           </label>
 
@@ -104,7 +104,9 @@ const onFolderSelect = async (event: Event) => {
       <p v-if="processingStatus" class="text-sm text-[#FF6B6B] text-center mt-2 animate-pulse">
         {{ processingStatus }}
       </p>
-      <p v-else-if="progress === 0" class="text-sm text-gray-500 text-center mt-2">準備しています...</p>
+      <p v-else-if="progress === 0" class="text-sm text-gray-500 text-center mt-2">
+        準備しています...
+      </p>
     </div>
   </div>
 </template>

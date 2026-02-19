@@ -212,23 +212,71 @@ describe('selection-algorithm', () => {
         faces: [{ descriptor: [0.1] }, { descriptor: [0.2] }],
       } as unknown as Photo
 
-      const singleA = { id: 'singleA', timestamp: 200, faces: [{ descriptor: [0.1] }] } as unknown as Photo
-      const singleB = { id: 'singleB', timestamp: 300, faces: [{ descriptor: [0.2] }] } as unknown as Photo
-      const singleC = { id: 'singleC', timestamp: 400, faces: [{ descriptor: [0.3] }] } as unknown as Photo
-      const singleD = { id: 'singleD', timestamp: 500, faces: [{ descriptor: [0.4] }] } as unknown as Photo
+      const singleA = {
+        id: 'singleA',
+        timestamp: 200,
+        faces: [{ descriptor: [0.1] }],
+      } as unknown as Photo
+      const singleB = {
+        id: 'singleB',
+        timestamp: 300,
+        faces: [{ descriptor: [0.2] }],
+      } as unknown as Photo
+      const singleC = {
+        id: 'singleC',
+        timestamp: 400,
+        faces: [{ descriptor: [0.3] }],
+      } as unknown as Photo
+      const singleD = {
+        id: 'singleD',
+        timestamp: 500,
+        faces: [{ descriptor: [0.4] }],
+      } as unknown as Photo
 
       // Need enough singles to fill the quota if pair is skipped
       const singleA2 = { ...singleA, id: 'singleA2', timestamp: 600 }
       const singleB2 = { ...singleB, id: 'singleB2', timestamp: 700 }
 
-      const clusterA = { id: 'A', descriptor: [0.1], config: { similarityThreshold: 0.05 } } as unknown as FaceCluster
-      const clusterB = { id: 'B', descriptor: [0.2], config: { similarityThreshold: 0.05 } } as unknown as FaceCluster
-      const clusterC = { id: 'C', descriptor: [0.3], config: { similarityThreshold: 0.05 } } as unknown as FaceCluster
-      const clusterD = { id: 'D', descriptor: [0.4], config: { similarityThreshold: 0.05 } } as unknown as FaceCluster
+      const clusterA = {
+        id: 'A',
+        descriptor: [0.1],
+        config: { similarityThreshold: 0.05 },
+      } as unknown as FaceCluster
+      const clusterB = {
+        id: 'B',
+        descriptor: [0.2],
+        config: { similarityThreshold: 0.05 },
+      } as unknown as FaceCluster
+      const clusterC = {
+        id: 'C',
+        descriptor: [0.3],
+        config: { similarityThreshold: 0.05 },
+      } as unknown as FaceCluster
+      const clusterD = {
+        id: 'D',
+        descriptor: [0.4],
+        config: { similarityThreshold: 0.05 },
+      } as unknown as FaceCluster
 
-      mockDB.getAllFromIndex.mockResolvedValue([pairAB, singleA, singleB, singleC, singleD, singleA2, singleB2])
+      mockDB.getAllFromIndex.mockResolvedValue([
+        pairAB,
+        singleA,
+        singleB,
+        singleC,
+        singleD,
+        singleA2,
+        singleB2,
+      ])
       // @ts-expect-error -- Mocking return value
-      burstDetection.deduplicateBurstPhotos.mockReturnValue([pairAB, singleA, singleB, singleC, singleD, singleA2, singleB2])
+      burstDetection.deduplicateBurstPhotos.mockReturnValue([
+        pairAB,
+        singleA,
+        singleB,
+        singleC,
+        singleD,
+        singleA2,
+        singleB2,
+      ])
 
       vi.mocked(faceapi.euclideanDistance).mockImplementation((d1, d2) => {
         // @ts-expect-error -- Mocking implementation
@@ -257,8 +305,8 @@ describe('selection-algorithm', () => {
       expect(ids).not.toContain('pairAB')
       expect(ids).toContain('singleC')
       expect(ids).toContain('singleD')
-      const hasA = ids.some(id => id.startsWith('singleA'))
-      const hasB = ids.some(id => id.startsWith('singleB'))
+      const hasA = ids.some((id) => id.startsWith('singleA'))
+      const hasB = ids.some((id) => id.startsWith('singleB'))
       expect(hasA).toBe(true)
       expect(hasB).toBe(true)
     })

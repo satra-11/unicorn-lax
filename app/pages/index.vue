@@ -374,10 +374,7 @@ onBeforeUnmount(() => {
           class="bg-[#FFFCFA] p-6 rounded-xl shadow-md mb-6 border border-[#FFE8D6]"
         >
           <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-bold text-gray-900">人物の確認・整理</h2>
-            <button class="text-sm text-[#FF6B6B] hover:underline" @click="step = 'upload'">
-              ← 写真を追加する
-            </button>
+            <h2 class="text-2xl font-bold text-gray-900">人物の確認・整理</h2>
           </div>
           <p class="mb-4 text-gray-600">
             AIが自動で写真に写っている人を見分けました。間違いがあれば、写真を正しい人のグループに移動してください。
@@ -387,7 +384,13 @@ onBeforeUnmount(() => {
             <FaceClusterSelector :session="currentSession" hide-selection />
           </div>
 
-          <div class="mt-6 flex justify-end">
+          <div class="mt-6 flex justify-between">
+            <button
+              class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              @click="step = 'upload'"
+            >
+              ← 写真を追加する
+            </button>
             <button
               class="px-6 py-2.5 bg-[#FF6B6B] text-white rounded-lg hover:bg-[#e55a5a] font-semibold shadow-md shadow-orange-200 transition-all transform hover:-translate-y-0.5"
               @click="goToStep2"
@@ -402,7 +405,10 @@ onBeforeUnmount(() => {
           v-if="step === 'step2' && currentSession"
           class="bg-[#FFFCFA] p-6 rounded-xl shadow-md mb-6 border border-[#FFE8D6]"
         >
-          <h2 class="text-xl font-bold text-gray-900 mb-4">アルバムの設定</h2>
+          <h2 class="text-2xl font-bold text-gray-900 mb-4">アルバムの設定</h2>
+          <p class="mb-4 text-gray-600">
+            AIが自動で写真に写っている人を見分けました。間違いがあれば、写真を正しい人のグループに移動してください。
+          </p>
 
           <!-- Mode Selection -->
           <div class="mb-4">

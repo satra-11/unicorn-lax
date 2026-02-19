@@ -77,17 +77,20 @@ const saveSettings = async () => {
 
 const moveTargetPhoto = ref<Photo | null>(null)
 const showMoveModal = ref(false)
+const selectedTargetClusterId = ref<string | null>(null)
 
 const openMoveModal = (photo: Photo) => {
   moveTargetPhoto.value = photo
+  selectedTargetClusterId.value = null // reset selection
   showMoveModal.value = true
 }
 
-const handleMove = async (targetClusterId: string) => {
-  if (!moveTargetPhoto.value) return
+const handleMove = async () => {
+  if (!moveTargetPhoto.value || !selectedTargetClusterId.value) return
 
   isLoading.value = true
   try {
+    const targetClusterId = selectedTargetClusterId.value
     await movePhotoToCluster(moveTargetPhoto.value.id, props.cluster.id, targetClusterId)
 
     // Remove from local list immediately
@@ -96,6 +99,7 @@ const handleMove = async (targetClusterId: string) => {
     emit('update') // Parent refresh might be needed if centroids changed enough to affect other things, but mainly just to signal change.
     showMoveModal.value = false
     moveTargetPhoto.value = null
+    selectedTargetClusterId.value = null
   } catch (e: unknown) {
     console.error('Failed to move photo', e)
     alert(`Failed to move photo: ${(e as Error).message}`)
@@ -108,6 +112,13 @@ const handleMove = async (targetClusterId: string) => {
 const targetClusters = computed(() => {
   return props.allClusters.filter((c) => c.id !== props.cluster.id)
 })
+
+const getThumbnailUrl = (cluster: FaceCluster) => {
+  if (cluster.thumbnail) {
+    return URL.createObjectURL(cluster.thumbnail)
+  }
+  return ''
+}
 
 const getPhotoUrl = (photo: Photo) => {
   // If we have a thumbnail blob, use it
@@ -270,26 +281,42 @@ const getPhotoUrl = (photo: Photo) => {
           <button
             v-for="target in targetClusters"
             :key="target.id"
-            class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-[#FFF5F0] hover:text-[#FF6B6B] rounded transition-colors flex items-center gap-2"
-            @click="handleMove(target.id)"
+            class="w-full text-left px-3 py-2 text-sm rounded transition-colors flex items-center gap-2"
+            :class="
+              selectedTargetClusterId === target.id
+                ? 'bg-[#FFF5F0] text-[#FF6B6B] font-bold ring-2 ring-[#FF6B6B] ring-inset'
+                : 'text-gray-700 hover:bg-gray-50'
+            "
+            @click="selectedTargetClusterId = target.id"
           >
             <div class="w-6 h-6 bg-gray-200 rounded-full overflow-hidden flex-shrink-0">
               <!-- Simple thumbnail for target -->
-              <!-- Using a reliable way to get thumbnail URL without complexity here, maybe skip or reuse helper if available in scope. We don't have helper easily accessible in loop context without wrapper, but let's try just label. -->
+              <img
+                v-if="target.thumbnail"
+                :src="getThumbnailUrl(target)"
+                class="w-full h-full object-cover"
+              />
             </div>
-            <span class="truncate font-medium">{{ target.label }}</span>
+            <span class="truncate">{{ target.label }}</span>
           </button>
           <div v-if="targetClusters.length === 0" class="text-center text-gray-400 py-4 text-sm">
             移動できるグループがありません。
           </div>
         </div>
 
-        <div class="flex justify-end">
+        <div class="flex justify-end gap-3">
           <button
-            class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+            class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             @click="showMoveModal = false"
           >
             キャンセル
+          </button>
+          <button
+            class="px-4 py-2 text-sm font-medium text-white bg-[#FF6B6B] rounded-lg hover:bg-[#e55a5a] shadow-md shadow-orange-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            :disabled="!selectedTargetClusterId"
+            @click="handleMove"
+          >
+            移動する
           </button>
         </div>
       </div>

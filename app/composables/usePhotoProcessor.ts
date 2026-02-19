@@ -251,22 +251,35 @@ export const usePhotoProcessor = () => {
               }
 
               if (bitmap) {
-                const detectionResult = (await detectFacesInWorker(photo.id, bitmap)) as Array<{
-                  detection: {
-                    _x?: number
-                    _y?: number
-                    _width?: number
-                    _height?: number
-                    x?: number
-                    y?: number
-                    width?: number
-                    height?: number
-                  }
-                  descriptor: Float32Array
-                }>
+                const detectionResult = (await detectFacesInWorker(photo.id, bitmap)) as {
+                  faces: Array<{
+                    detection: {
+                      _x?: number
+                      _y?: number
+                      _width?: number
+                      _height?: number
+                      x?: number
+                      y?: number
+                      width?: number
+                      height?: number
+                    }
+                    descriptor: Float32Array
+                    score: number
+                    smileScore?: number
+                    panScore?: number
+                    tiltScore?: number
+                  }>
+                  blurScore: number
+                  width: number
+                  height: number
+                }
                 // NOTE: bitmap is now neutered (transferred to worker), cannot be used for drawing.
 
-                if (detectionResult && detectionResult.length > 0) {
+                if (detectionResult && detectionResult.faces.length > 0) {
+                  photo.width = detectionResult.width
+                  photo.height = detectionResult.height
+                  photo.blurScore = detectionResult.blurScore
+
                   // Create a FRESH bitmap from the file for thumbnail cropping
                   let cropBitmap: ImageBitmap | undefined
                   try {
@@ -276,7 +289,7 @@ export const usePhotoProcessor = () => {
                   }
 
                   photo.faces = await Promise.all(
-                    detectionResult.map(async (face) => {
+                    detectionResult.faces.map(async (face) => {
                       const { _x, _y, _width, _height } = face.detection
                       const x = _x ?? face.detection.x ?? 0
                       const y = _y ?? face.detection.y ?? 0
@@ -302,14 +315,25 @@ export const usePhotoProcessor = () => {
                         descriptor: face.descriptor,
                         box: { x, y, width, height },
                         thumbnail: blob,
+                        score: face.score,
+                        smileScore: face.smileScore,
+                        panScore: face.panScore,
+                        tiltScore: face.tiltScore,
                       }
                     }),
                   )
 
                   // Close the crop bitmap
                   cropBitmap?.close()
+                } else if (detectionResult) {
+                   // Even if no faces, we might want blur score and dimensions
+                   photo.width = detectionResult.width
+                   photo.height = detectionResult.height
+                   photo.blurScore = detectionResult.blurScore
                 }
               }
+
+
             }
 
             // Generate full-photo thumbnail for preview

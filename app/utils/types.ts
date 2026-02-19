@@ -5,10 +5,17 @@ export interface Photo {
   relativePath: string
   timestamp: number
   dateStr: string // ISO string
+  width?: number
+  height?: number
+  blurScore?: number // 0 (blurry) to 1 (sharp)
   faces?: {
     descriptor: Float32Array
     box: { x: number; y: number; width: number; height: number }
     thumbnail?: Blob
+    score?: number // Detection confidence
+    smileScore?: number // 0 to 1
+    panScore?: number // -1 (left) to 1 (right), 0 is front
+    tiltScore?: number // -1 (down) to 1 (up), 0 is front
   }[]
   // We avoid storing full Blob in DB alongside metadata to keep it fast,
   // but might store thumbnail separately or just path if accessing via FileSystemHandle (in future).

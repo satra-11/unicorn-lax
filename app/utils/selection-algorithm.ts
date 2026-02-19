@@ -7,41 +7,64 @@ import * as faceapi from 'face-api.js'
 interface ScoredPhoto {
   photo: Photo
   subjects: string[]
+  matchedFaces: NonNullable<Photo['faces']>
   matched: boolean
 }
 
 function matchPhotoToSubjects(
   photo: Photo,
   targetClusters: FaceCluster[],
-): { subjects: string[]; matched: boolean } {
+): { subjects: string[]; matchedFaces: NonNullable<Photo['faces']>; matched: boolean } {
   if (!photo.faces || photo.faces.length === 0) {
-    return { subjects: [], matched: false }
+    return { subjects: [], matchedFaces: [], matched: false }
   }
 
   const subjects = new Set<string>()
+  const matchedFaces: NonNullable<Photo['faces']> = []
+
   for (const face of photo.faces) {
+    let isMatch = false
     for (const cluster of targetClusters) {
       const threshold = cluster.config?.similarityThreshold ?? CLUSTER_THRESHOLD
       if (faceapi.euclideanDistance(face.descriptor, cluster.descriptor) < threshold) {
         subjects.add(cluster.id)
+        isMatch = true
       }
     }
+    if (isMatch) matchedFaces.push(face)
   }
 
-  return { subjects: Array.from(subjects), matched: subjects.size > 0 }
+  return { subjects: Array.from(subjects), matchedFaces, matched: subjects.size > 0 }
 }
 
 function buildScoredPhotos(allPhotos: Photo[], targetClusters: FaceCluster[]): ScoredPhoto[] {
   return allPhotos.map((photo) => {
-    const { subjects, matched } = matchPhotoToSubjects(photo, targetClusters)
-    return { photo: { ...photo }, subjects, matched }
+    const { subjects, matchedFaces, matched } = matchPhotoToSubjects(photo, targetClusters)
+    return { photo: { ...photo }, subjects, matchedFaces, matched }
   })
+}
+
+export interface SelectionWeights {
+  smile: number // 0-1
+  faceScore: number // 0-1 (Quality/Size)
+  orientation: number // 0-1 (Looking at camera)
+  center: number // 0-1 (Centering)
+  blur: number // 0-1 (Sharpness)
+  groupBalance: number // 0 (Solo) to 1 (Group)
 }
 
 export async function selectGroupBalancedPhotos(
   sessionId: string,
   targetClusters: FaceCluster[],
   count: number,
+  weights: SelectionWeights = {
+    smile: 0,
+    faceScore: 0,
+    orientation: 0,
+    center: 0,
+    blur: 0,
+    groupBalance: 0.5, // Default to neutral/fairness
+  },
 ): Promise<Photo[]> {
   const db = await getDB()
   const allPhotos = await db.getAllFromIndex('photos', 'by-session', sessionId)
@@ -64,6 +87,7 @@ export async function selectGroupBalancedPhotos(
   // 1. Prioritize photos with the most target subjects (highest initial score)
   // 2. Maintain a count of how many times each subject has been selected
   // 3. Iteratively select photos that help balance the subject counts
+  // 4. Incorporate Quality Scores (Smile, Blur, etc.)
 
   const selected: (typeof scoredPhotos)[0][] = []
   const subjectCounts = new Map<string, number>()
@@ -72,11 +96,67 @@ export async function selectGroupBalancedPhotos(
   // Clone matched array to pick from
   const pool = [...matched]
 
+  // Pre-calculate Quality Scores for efficiency
+  // This score is constant for a photo regardless of selection state
+  const photoQualityScores = new Map<string, number>()
+  pool.forEach((img) => {
+    let qScore = 0
+    if (img.matchedFaces.length > 0) {
+      // Average metrics across matched faces
+      const avgSmile =
+        img.matchedFaces.reduce((sum, f) => sum + (f.smileScore ?? 0), 0) /
+        img.matchedFaces.length
+      const avgPan =
+        img.matchedFaces.reduce((sum, f) => sum + Math.abs(f.panScore ?? 0), 0) /
+        img.matchedFaces.length
+        // panScore of 0 is Front. We want 0. So score should be higher if pan is lower.
+        // Let's use (1 - abs(pan)) as "Frontality" score.
+
+      const avgFaceScore =
+        img.matchedFaces.reduce((sum, f) => sum + (f.score ?? 0), 0) / img.matchedFaces.length
+
+      // Center score: How close to center?
+      // 0.5 is center X.
+      const avgCenterX =
+        img.matchedFaces.reduce(
+          (sum, f) => sum + Math.abs((f.box.x + f.box.width / 2) / (img.photo.width || 1000) - 0.5),
+          0,
+        ) / img.matchedFaces.length
+      // avgCenterX is distance from 0.5. Range 0 to 0.5.
+      // We want distinct score. 1 - (dist * 2) => 1 at center, 0 at edge.
+
+      const centerMetric = 1 - avgCenterX * 2
+      const orientationMetric = 1 - avgPan // 1 is front, 0 is side (pan=1)
+
+      qScore += avgSmile * weights.smile * 2 // Boost smile impact
+      qScore += avgFaceScore * weights.faceScore
+      qScore += orientationMetric * weights.orientation
+      qScore += centerMetric * weights.center
+    }
+
+    // Blur is photo-level (usually)
+    if (img.photo.blurScore !== undefined) {
+      qScore += img.photo.blurScore * weights.blur * 2 // Boost blur impact
+    }
+
+    // Group/Solo Bias Score
+    // weights.groupBalance: 0 (Solo) ... 0.5 (Neutral) ... 1 (Group)
+    // Map to -1 ... 0 ... 1
+    const bias = (weights.groupBalance - 0.5) * 2
+    if (bias > 0) {
+      // Prefer Group: Bonus for > 1 subject
+      if (img.subjects.length > 1) qScore += bias * 2
+    } else if (bias < 0) {
+       // Prefer Solo: Bonus for == 1 subject (by subtracting bias which is negative)
+       // Or simpler: Penalty for > 1
+       if (img.subjects.length === 1) qScore -= bias * 2 // bias is neg, so this adds score
+    }
+
+    photoQualityScores.set(img.photo.id, qScore)
+  })
+
   for (let i = 0; i < count; i++) {
     if (pool.length === 0) break
-
-    // Find the minimum subject count to prioritize underrepresented subjects
-    // const minCount = Math.min(...Array.from(subjectCounts.values()))
 
     let bestCandidateIndex = -1
     let maxScore = -Infinity
@@ -85,6 +165,7 @@ export async function selectGroupBalancedPhotos(
 
     for (let j = 0; j < pool.length; j++) {
       const candidate = pool[j]!
+      const qualityScore = photoQualityScores.get(candidate.photo.id) || 0
 
       // Calculate potential new counts if this candidate is selected
       const tempCounts = new Map(subjectCounts)
@@ -99,9 +180,9 @@ export async function selectGroupBalancedPhotos(
       const variance = newCounts.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / numSubjects
       const stdDev = Math.sqrt(variance)
 
-      // Score = (Number of Faces) - (K * StdDev)
-      // We want to maximize faces while drastically minimizing imbalance (StdDev).
-      const score = candidate.subjects.length - K * stdDev
+      // Score = (Number of Faces) + (Quality Score) - (K * StdDev)
+      // Base value is faces count (efficiency), modulated by quality and fairness.
+      const score = candidate.subjects.length + qualityScore - K * stdDev
 
       if (score > maxScore) {
         maxScore = score

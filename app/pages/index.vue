@@ -24,11 +24,20 @@ const targetCount = ref(10)
 const isSelecting = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const isConfirmed = ref(false)
+const isFinalized = ref(false)
+const weights = ref({
+  smile: 0,
+  faceScore: 0,
+  orientation: 0,
+  center: 0,
+  blur: 0,
+  groupBalance: 0.5,
+})
 
 const stepDefs = [
   { label: 'ステップ1', description: '人物の確認・整理' },
   { label: 'ステップ2', description: 'アルバムの設定' },
-  { label: 'ステップ3', description: 'できあがり！' },
+  { label: 'ステップ3', description: '仕上げ' },
 ]
 
 const currentStepNumber = computed<1 | 2 | 3>(() => {
@@ -38,7 +47,7 @@ const currentStepNumber = computed<1 | 2 | 3>(() => {
 })
 
 const completedStepNumber = computed<0 | 1 | 2 | 3>(() => {
-  if (isConfirmed.value) return 3
+  if (isFinalized.value) return 3
   if (step.value === 'step3') return 2
   if (step.value === 'step2') return 1
   return 0
@@ -83,12 +92,16 @@ const onFacesSelected = (clusters: FaceCluster[]) => {
 const generateAlbum = async () => {
   if (!currentSession.value) return
   isSelecting.value = true
+  // Reset finalized state if regenerating
+  isFinalized.value = false
+  
   try {
     if (mode.value === 'group') {
       generatedPhotos.value = await selectGroupBalancedPhotos(
         currentSession.value.id,
         selectedClusters.value,
         targetCount.value,
+        weights.value,
       )
     } else {
       if (selectedClusters.value.length > 0) {
@@ -465,37 +478,132 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <!-- Step 3: 完成 -->
+        <!-- Step 3: 仕上げ (Final Adjustment) -->
         <div
           v-if="step === 'step3'"
           class="bg-[#FFFCFA] p-6 rounded-xl shadow-md mb-6 border border-[#FFE8D6]"
         >
           <div class="text-center mb-6">
-            <div
-              class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-600 mb-3"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-8 w-8"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fill-rule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clip-rule="evenodd"
-                />
-              </svg>
-            </div>
-            <h2 class="text-2xl font-bold text-gray-900">アルバムのできあがり！</h2>
-            <p class="mt-1 text-gray-600">{{ confirmedPhotos.length }} 枚の写真をえらびました！</p>
+            <h2 class="text-2xl font-bold text-gray-900">アルバムの仕上げ</h2>
+            <p class="mt-1 text-gray-600">
+              {{ confirmedPhotos.length }} 枚の写真が選ばれました。
+              好みに合わせて調整できます。
+            </p>
           </div>
 
-          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          <!-- Weights Controls -->
+          <div class="mb-8 p-6 bg-orange-50 rounded-xl border border-orange-100">
+            <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <span class="i-lucide-sliders-horizontal w-5 h-5" />
+              好みで微調整
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+              <!-- Smile -->
+              <div>
+                <div class="flex justify-between mb-1">
+                  <label class="text-sm font-semibold text-gray-700">笑顔重視</label>
+                  <span class="text-xs text-gray-500">{{ Math.round(weights.smile * 100) }}%</span>
+                </div>
+                <input
+                  v-model.number="weights.smile"
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#FF6B6B]"
+                />
+              </div>
+
+              <!-- Orientation -->
+              <div>
+                <div class="flex justify-between mb-1">
+                  <label class="text-sm font-semibold text-gray-700">カメラ目線</label>
+                  <span class="text-xs text-gray-500">{{ Math.round(weights.orientation * 100) }}%</span>
+                </div>
+                <input
+                  v-model.number="weights.orientation"
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#FF6B6B]"
+                />
+              </div>
+
+              <!-- Blur -->
+              <div>
+                <div class="flex justify-between mb-1">
+                  <label class="text-sm font-semibold text-gray-700">ブレてない写真</label>
+                  <span class="text-xs text-gray-500">{{ Math.round(weights.blur * 100) }}%</span>
+                </div>
+                <input
+                  v-model.number="weights.blur"
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#FF6B6B]"
+                />
+              </div>
+
+              <!-- Center -->
+              <div>
+                <div class="flex justify-between mb-1">
+                  <label class="text-sm font-semibold text-gray-700">中心寄り</label>
+                  <span class="text-xs text-gray-500">{{ Math.round(weights.center * 100) }}%</span>
+                </div>
+                <input
+                  v-model.number="weights.center"
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#FF6B6B]"
+                />
+              </div>
+
+              <!-- Group Balance -->
+              <div class="col-span-1 md:col-span-2">
+                <div class="flex justify-between mb-1">
+                  <label class="text-sm font-semibold text-gray-700">グループバランス</label>
+                  <span class="text-xs font-medium" :class="weights.groupBalance > 0.6 ? 'text-blue-600' : weights.groupBalance < 0.4 ? 'text-pink-600' : 'text-gray-500'">
+                    {{ weights.groupBalance > 0.6 ? 'みんなで写っている写真を優先' : weights.groupBalance < 0.4 ? '個人の写真を優先' : 'バランスよく' }}
+                  </span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="text-xs text-gray-500 w-12 text-right">個人</span>
+                  <input
+                    v-model.number="weights.groupBalance"
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#FF8E53]"
+                  />
+                  <span class="text-xs text-gray-500 w-12">グループ</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-6 flex justify-center">
+              <button
+                class="px-6 py-2 bg-white border border-orange-300 text-orange-600 rounded-full hover:bg-orange-50 font-bold transition-colors shadow-sm flex items-center gap-2"
+                :disabled="isSelecting"
+                @click="generateAlbum"
+              >
+                <span v-if="isSelecting" class="i-lucide-loader-2 animate-spin" />
+                <span v-else class="i-lucide-refresh-cw" />
+                写真を再選択する
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-8">
             <div
               v-for="photo in confirmedPhotos"
               :key="photo.id"
-              class="border rounded-lg overflow-hidden"
+              class="border rounded-lg overflow-hidden relative group"
             >
               <div
                 class="aspect-video bg-gray-100 flex items-center justify-center overflow-hidden"
@@ -510,44 +618,65 @@ onBeforeUnmount(() => {
                   photo.name
                 }}</span>
               </div>
-              <div class="p-2 text-xs text-gray-600 bg-white truncate">
-                {{ formatDate(photo.dateStr) }}
-              </div>
+              <!-- Scores Overlay (Optional, consistent with debug but useful?) -->
+              <!-- Kept simple for now -->
             </div>
           </div>
 
-          <!-- Backup Prompt -->
-          <div class="mt-8 p-5 bg-amber-50 border border-amber-200 rounded-xl">
-            <div class="flex items-start gap-3">
-              <div
-                class="flex-shrink-0 w-10 h-10 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center"
-              >
-                <span class="i-lucide-download w-5 h-5" />
-              </div>
-              <div class="flex-1">
-                <h4 class="font-bold text-amber-900 text-sm">データを保存しておきましょう</h4>
-                <p class="text-amber-700 text-sm mt-1">
-                  結果を残しておくために、バックアップファイルを保存しておくのがおすすめです。
-                </p>
-                <button
-                  class="mt-3 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm font-semibold transition-colors inline-flex items-center gap-2"
-                  @click="onExport"
-                >
-                  バックアップ保存
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div class="mt-6 flex justify-between gap-2">
-            <button
+          <div class="flex justify-between items-center pt-4 border-t border-gray-200">
+             <button
               class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
               @click="goBackToStep2"
             >
-              ← 設定画面に戻る
+              ← 設定に戻る
+            </button>
+            <button
+              class="px-8 py-3 bg-[#FF6B6B] text-white rounded-lg hover:bg-[#e55a5a] font-bold shadow-lg shadow-orange-200 transition-all transform hover:-translate-y-0.5 text-lg"
+              @click="isFinalized = true"
+            >
+              これでOK！
             </button>
           </div>
         </div>
+
+        <!-- Completed View -->
+        <div 
+          v-if="isFinalized" 
+          class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in"
+        >
+          <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 relative overflow-hidden">
+             <!-- Confetti/Success decoration -->
+             <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#FF6B6B] via-[#FF8E53] to-[#FFB347]"></div>
+             
+             <div class="text-center">
+                <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 text-green-600 mb-6 mx-auto">
+                  <span class="i-lucide-check w-10 h-10" />
+                </div>
+                <h2 class="text-3xl font-bold text-gray-900 mb-2">完成です！</h2>
+                <p class="text-gray-600 mb-8">
+                  素敵なアルバムのための写真選びが完了しました。<br>
+                  結果を保存して、大切に使ってくださいね。
+                </p>
+
+                <div class="flex flex-col gap-3">
+                   <button
+                    class="w-full px-6 py-3 bg-[#FF6B6B] text-white rounded-xl hover:bg-[#e55a5a] font-bold shadow-md transition-all flex items-center justify-center gap-2"
+                    @click="onExport"
+                  >
+                    <span class="i-lucide-download" />
+                    バックアップを保存する
+                  </button>
+                  <button
+                    class="w-full px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-bold transition-all"
+                    @click="isFinalized = false"
+                  >
+                    調整画面に戻る
+                  </button>
+                </div>
+             </div>
+          </div>
+        </div>
+
       </template>
     </div>
   </div>

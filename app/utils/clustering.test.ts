@@ -51,7 +51,6 @@ describe('clustering', () => {
       // Mock euclideanDistance
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ;(faceapi.euclideanDistance as any).mockImplementation((d1: any, d2: any) => {
-        // @ts-expect-error -- Mocking implementation with simple diff
         return Math.abs(d1[0] - d2[0])
       })
 
@@ -77,7 +76,6 @@ describe('clustering', () => {
       mockDB.getAllFromIndex.mockResolvedValue([p1, p2])
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ;(faceapi.euclideanDistance as any).mockImplementation((d1: any, d2: any) => {
-        // @ts-expect-error -- Mocking implementation with simple diff
         return Math.abs(d1[0] - d2[0])
       })
 
@@ -107,7 +105,6 @@ describe('clustering', () => {
       mockDB.getAllFromIndex.mockResolvedValue([p1])
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ;(faceapi.euclideanDistance as any).mockImplementation((d1: any, d2: any) => {
-        // @ts-expect-error -- Mocking implementation with simple diff
         return Math.abs(d1[0] - d2[0])
       })
 

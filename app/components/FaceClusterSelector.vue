@@ -65,7 +65,7 @@ const loadClusters = async () => {
       getUnrecognizedPhotos(props.session.id),
     ])
 
-    if (unrecognizedPhotos.length > 0) {
+    if (unrecognizedPhotos.length > 0 && !props.selectionOnly) {
       const unrecognizedCluster: FaceCluster = {
         id: 'unrecognized',
         label: '未検出',
@@ -223,7 +223,10 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
         "
       >
         <!-- Main Card Area -->
-        <div class="cursor-pointer" @click="props.selectionOnly ? toggleSelection(cluster) : openSettings(cluster)">
+        <div
+          class="cursor-pointer"
+          @click="props.selectionOnly ? toggleSelection(cluster) : openSettings(cluster)"
+        >
           <div class="aspect-square bg-gray-100 flex items-center justify-center relative">
             <img
               v-if="cluster.thumbnail"
@@ -256,7 +259,11 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
         </div>
 
         <!-- Selection Checkbox (Top Right) -->
-        <div v-if="!props.hideSelection" class="absolute top-1 right-1 z-10" @click.stop="toggleSelection(cluster)">
+        <div
+          v-if="!props.hideSelection"
+          class="absolute top-1 right-1 z-10"
+          @click.stop="toggleSelection(cluster)"
+        >
           <div
             class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer shadow-sm"
             :class="

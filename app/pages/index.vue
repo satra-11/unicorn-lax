@@ -418,24 +418,20 @@ onBeforeUnmount(() => {
             @select="onFacesSelected"
           />
 
-          <!-- Generate Button -->
-          <div class="mt-6 flex justify-center">
-            <button
-              :disabled="selectedClusters.length === 0 || isSelecting"
-              class="px-8 py-3 bg-gradient-to-r from-[#FF6B6B] to-[#FF8E53] text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-lg shadow-orange-200 transition-all transform hover:-translate-y-0.5 text-lg"
-              @click="generateAlbum"
-            >
-              {{ isSelecting ? '生成中...' : '写真をえらぶ' }}
-            </button>
-          </div>
-
           <!-- Back button -->
-          <div class="mt-6 flex justify-start">
+          <div class="mt-6 flex justify-between">
             <button
               class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
               @click="goBackToStep1"
             >
               ← 人物の確認に戻る
+            </button>
+             <button
+              :disabled="selectedClusters.length === 0 || isSelecting"
+              class="px-6 py-2.5 bg-gradient-to-r from-[#FF6B6B] to-[#FF8E53] text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-lg shadow-orange-200 transition-all transform hover:-translate-y-0.5"
+              @click="generateAlbum"
+            >
+              {{ isSelecting ? '生成中...' : '写真をえらぶ' }}
             </button>
           </div>
         </div>

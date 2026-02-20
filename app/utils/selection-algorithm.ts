@@ -192,7 +192,7 @@ export async function selectGroupBalancedPhotos(
   // Sort selected photos by time for the album
   selected.sort((a, b) => a.photo.timestamp - b.photo.timestamp)
 
-  return selected.map((p) => p.photo)
+  return selected.map((p) => ({ ...p.photo, matchedSubjects: p.subjects }))
 }
 
 export async function selectGrowthPhotos(
@@ -245,7 +245,7 @@ export async function selectGrowthPhotos(
             : prev,
         )
 
-        selected.push(best.photo)
+        selected.push({ ...best.photo, matchedSubjects: best.subjects })
       }
     }
   }

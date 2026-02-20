@@ -24,6 +24,7 @@ export interface Photo {
   excluded?: boolean
   hash?: string
   detectionModel?: 'ssd' | 'tiny'
+  matchedSubjects?: string[] // Added to track which selected subjects appear in this photo
 }
 
 export interface ProcessingSession {

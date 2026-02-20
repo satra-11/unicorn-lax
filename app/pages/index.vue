@@ -122,6 +122,26 @@ const generateAlbum = async () => {
 
 const confirmedPhotos = computed(() => generatedPhotos.value.filter((p) => !p.excluded))
 
+const clusterCounts = computed(() => {
+  const counts = new Map<string, number>()
+  selectedClusters.value.forEach(c => counts.set(c.id, 0))
+  
+  confirmedPhotos.value.forEach(photo => {
+    if (photo.matchedSubjects) {
+      photo.matchedSubjects.forEach(id => {
+        if (counts.has(id)) {
+          counts.set(id, counts.get(id)! + 1)
+        }
+      })
+    }
+  })
+  
+  return selectedClusters.value.map(c => ({
+    cluster: c,
+    count: counts.get(c.id) || 0
+  }))
+})
+
 const goToStep2 = () => {
   step.value = 'step2'
 }
@@ -204,6 +224,7 @@ const onImportFile = async (event: Event) => {
 
 // Thumbnail handling for step3
 const blobUrls = ref(new Map<string, string>())
+const clusterBlobUrls = ref(new Map<string, string>())
 
 const getThumbnailUrl = (photo: Photo): string => {
   if (!photo.thumbnail) return ''
@@ -214,12 +235,26 @@ const getThumbnailUrl = (photo: Photo): string => {
   return url
 }
 
+const getClusterThumbnailUrl = (cluster: FaceCluster): string => {
+  if (!cluster.thumbnail) return ''
+  const existing = clusterBlobUrls.value.get(cluster.id)
+  if (existing) return existing
+  const url = URL.createObjectURL(cluster.thumbnail)
+  clusterBlobUrls.value.set(cluster.id, url)
+  return url
+}
+
 watch(step, (newStep) => {
   if (newStep !== 'step3') {
     for (const url of blobUrls.value.values()) {
       URL.revokeObjectURL(url)
     }
     blobUrls.value.clear()
+    
+    for (const url of clusterBlobUrls.value.values()) {
+      URL.revokeObjectURL(url)
+    }
+    clusterBlobUrls.value.clear()
   }
 })
 
@@ -245,6 +280,9 @@ const getPhotoMetrics = (photo: Photo) => {
 
 onBeforeUnmount(() => {
   for (const url of blobUrls.value.values()) {
+    URL.revokeObjectURL(url)
+  }
+  for (const url of clusterBlobUrls.value.values()) {
     URL.revokeObjectURL(url)
   }
 })
@@ -502,6 +540,44 @@ onBeforeUnmount(() => {
             <h2 class="text-2xl font-bold text-gray-900">アルバムの仕上げ</h2>
             <p class="mt-1 text-gray-600">
               {{ confirmedPhotos.length }} 枚の写真が選ばれました。 好みに合わせて調整できます。
+            </p>
+          </div>
+
+          <!-- Cluster Appearance Counts Visualization -->
+          <div class="mb-8 p-6 bg-white rounded-xl border border-[#FFE8D6] shadow-sm">
+            <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <span class="i-lucide-users w-5 h-5 text-[#FF6B6B]" />
+              各メンバーの写っている枚数
+            </h3>
+            <div class="flex flex-wrap gap-3">
+              <div
+                v-for="item in clusterCounts"
+                :key="item.cluster.id"
+                class="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-full border shadow-sm transition-all"
+              >
+                <img
+                  v-if="item.cluster.thumbnail"
+                  :src="getClusterThumbnailUrl(item.cluster)"
+                  class="w-6 h-6 rounded-full object-cover bg-gray-200 ring-1 ring-gray-300"
+                />
+                <div
+                  v-else
+                  class="w-6 h-6 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-xs font-bold ring-1 ring-orange-200"
+                >
+                  {{ item.cluster.label.charAt(0) }}
+                </div>
+                <span class="text-sm font-medium text-gray-700">{{ item.cluster.label }}</span>
+                <span
+                  class="text-xs font-bold text-white px-2 py-0.5 rounded-full shadow-sm"
+                  :class="item.count === 0 ? 'bg-gray-400' : 'bg-[#FF6B6B]'"
+                >
+                  {{ item.count }}枚
+                </span>
+              </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-4 flex items-start gap-1.5 leading-relaxed bg-[#FFF9F0] p-3 rounded-lg border border-[#FFE8D6]">
+              <span class="i-lucide-info w-4 h-4 text-orange-500 mt-0.5 shrink-0" />
+              <span>「全員が均等に写る」ことを最優先に調整されます。<br/>グループ写真に写っている場合も、それぞれ1枚としてカウントしています。</span>
             </p>
           </div>
 

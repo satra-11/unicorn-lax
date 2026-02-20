@@ -4,9 +4,13 @@ import type { Photo, FaceCluster } from './types'
 import * as faceapi from 'face-api.js'
 
 // Mock face-api.js
-vi.mock('face-api.js', () => ({
-  euclideanDistance: vi.fn(),
-}))
+vi.mock('face-api.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('face-api.js')>()
+  return {
+    ...actual,
+    euclideanDistance: vi.fn(),
+  }
+})
 
 describe('burst-detection', () => {
   beforeEach(() => {
@@ -97,7 +101,7 @@ describe('burst-detection', () => {
 
     it('should select photo with more matched subjects', () => {
       // Mock euclideanDistance to simulate matching
-      vi.mocked(faceapi.euclideanDistance).mockReturnValue(0.4) // Match (assuming threshold is 0.6)
+      ;(faceapi.euclideanDistance as any).mockReturnValue(0.4) // Match (assuming threshold is 0.6)
 
       const targetCluster: FaceCluster = {
         id: 'c1',

@@ -6,9 +6,13 @@ import * as faceapi from 'face-api.js'
 import type { Photo, FaceCluster } from './types'
 
 // Mock dependencies
-vi.mock('./db')
-vi.mock('./burst-detection')
-vi.mock('face-api.js', () => ({
+vi.mock('./db', async () => {
+  return { getDB: vi.fn() }
+})
+vi.mock('./burst-detection', async () => {
+  return { deduplicateBurstPhotos: vi.fn(photos => photos) }
+})
+vi.mock('face-api.js', async () => ({
   euclideanDistance: vi.fn(),
 }))
 
@@ -58,8 +62,7 @@ describe('selection-algorithm', () => {
       burstDetection.deduplicateBurstPhotos.mockReturnValue([p1, p2, p3])
 
       // Mock face matching
-      vi.mocked(faceapi.euclideanDistance).mockImplementation((d1, d2) => {
-        // @ts-expect-error -- Mocking implementation with simple diff
+      ;(faceapi.euclideanDistance as any).mockImplementation((d1: any, d2: any) => {
         return Math.abs(d1[0] - d2[0]) // Simple distance
       })
 
@@ -129,8 +132,7 @@ describe('selection-algorithm', () => {
       // @ts-expect-error -- Mocking return value
       burstDetection.deduplicateBurstPhotos.mockReturnValue([twoShot, soloA, soloB1, soloB2])
 
-      vi.mocked(faceapi.euclideanDistance).mockImplementation((d1, d2) => {
-        // @ts-expect-error -- Mocking implementation with simple diff
+      ;(faceapi.euclideanDistance as any).mockImplementation((d1: any, d2: any) => {
         return Math.abs(d1[0] - d2[0])
       })
 
@@ -181,8 +183,7 @@ describe('selection-algorithm', () => {
       // @ts-expect-error -- Mocking return value
       burstDetection.deduplicateBurstPhotos.mockReturnValue([twoShot, soloA, soloB])
 
-      vi.mocked(faceapi.euclideanDistance).mockImplementation((d1, d2) => {
-        // @ts-expect-error -- Mocking implementation with simple diff
+      ;(faceapi.euclideanDistance as any).mockImplementation((d1: any, d2: any) => {
         return Math.abs(d1[0] - d2[0])
       })
 
@@ -287,8 +288,7 @@ describe('selection-algorithm', () => {
         singleB2,
       ])
 
-      vi.mocked(faceapi.euclideanDistance).mockImplementation((d1, d2) => {
-        // @ts-expect-error -- Mocking implementation
+      ;(faceapi.euclideanDistance as any).mockImplementation((d1: any, d2: any) => {
         return Math.abs(d1[0] - d2[0])
       })
 
@@ -355,7 +355,7 @@ describe('selection-algorithm', () => {
       // @ts-expect-error -- Mocking return value
       burstDetection.deduplicateBurstPhotos.mockReturnValue([p1, p2, p3, p4, p5])
 
-      vi.mocked(faceapi.euclideanDistance).mockReturnValue(0) // Perfect match
+      ;(faceapi.euclideanDistance as any).mockReturnValue(0) // Perfect match
 
       // Select 3 photos.
       // Range: 1000 to 5000. Duration 4000. Interval 1333.33

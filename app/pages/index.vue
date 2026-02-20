@@ -29,7 +29,6 @@ const weights = ref({
   smile: 0,
   faceScore: 0,
   orientation: 0,
-  center: 0,
   blur: 0,
   groupBalance: 0.5,
 })
@@ -227,7 +226,6 @@ watch(step, (newStep) => {
 const getPhotoMetrics = (photo: Photo) => {
   let smile = 0
   let orientation = 0
-  let center = 0
   const blur = photo.blurScore ?? 0
 
   if (photo.faces && photo.faces.length > 0) {
@@ -236,21 +234,12 @@ const getPhotoMetrics = (photo: Photo) => {
     const avgPan =
       photo.faces.reduce((sum, f) => sum + Math.abs(f.panScore ?? 0), 0) / photo.faces.length
     orientation = 1 - avgPan
-
-    const avgCenterX =
-      photo.faces.reduce((sum, f) => {
-        const cx = f.box.x + f.box.width / 2
-        const photoWidth = photo.width || 1000
-        return sum + Math.abs(cx / photoWidth - 0.5)
-      }, 0) / photo.faces.length
-    center = 1 - avgCenterX * 2
   }
 
   return {
     smile: Math.round(smile * 100),
     orientation: Math.round(orientation * 100),
     blur: Math.round(blur * 100),
-    center: Math.round(center * 100),
   }
 }
 
@@ -574,22 +563,6 @@ onBeforeUnmount(() => {
                 />
               </div>
 
-              <!-- Center -->
-              <div>
-                <div class="flex justify-between mb-1">
-                  <label class="text-sm font-semibold text-gray-700">中心寄り</label>
-                  <span class="text-xs text-gray-500">{{ Math.round(weights.center * 100) }}%</span>
-                </div>
-                <input
-                  v-model.number="weights.center"
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#FF6B6B]"
-                />
-              </div>
-
               <!-- Group Balance -->
               <div class="col-span-1 md:col-span-2">
                 <div class="flex justify-between mb-1">
@@ -674,10 +647,6 @@ onBeforeUnmount(() => {
                 <div class="flex justify-between">
                   <span>ブレ:</span>
                   <span class="font-medium">{{ getPhotoMetrics(photo).blur }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span>中心:</span>
-                  <span class="font-medium">{{ getPhotoMetrics(photo).center }}</span>
                 </div>
               </div>
             </div>

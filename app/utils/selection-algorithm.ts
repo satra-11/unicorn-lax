@@ -48,7 +48,6 @@ export interface SelectionWeights {
   smile: number // 0-1
   faceScore: number // 0-1 (Quality/Size)
   orientation: number // 0-1 (Looking at camera)
-  center: number // 0-1 (Centering)
   blur: number // 0-1 (Sharpness)
   groupBalance: number // 0 (Solo) to 1 (Group)
 }
@@ -61,7 +60,6 @@ export async function selectGroupBalancedPhotos(
     smile: 0,
     faceScore: 0,
     orientation: 0,
-    center: 0,
     blur: 0,
     groupBalance: 0.5, // Default to neutral/fairness
   },
@@ -114,23 +112,11 @@ export async function selectGroupBalancedPhotos(
       const avgFaceScore =
         img.matchedFaces.reduce((sum, f) => sum + (f.score ?? 0), 0) / img.matchedFaces.length
 
-      // Center score: How close to center?
-      // 0.5 is center X.
-      const avgCenterX =
-        img.matchedFaces.reduce(
-          (sum, f) => sum + Math.abs((f.box.x + f.box.width / 2) / (img.photo.width || 1000) - 0.5),
-          0,
-        ) / img.matchedFaces.length
-      // avgCenterX is distance from 0.5. Range 0 to 0.5.
-      // We want distinct score. 1 - (dist * 2) => 1 at center, 0 at edge.
-
-      const centerMetric = 1 - avgCenterX * 2
       const orientationMetric = 1 - avgPan // 1 is front, 0 is side (pan=1)
 
       qScore += avgSmile * weights.smile * 2 // Boost smile impact
       qScore += avgFaceScore * weights.faceScore
       qScore += orientationMetric * weights.orientation
-      qScore += centerMetric * weights.center
     }
 
     // Blur is photo-level (usually)

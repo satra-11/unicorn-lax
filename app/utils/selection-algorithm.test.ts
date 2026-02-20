@@ -37,17 +37,17 @@ describe('selection-algorithm', () => {
       const p1 = {
         id: 'p1',
         timestamp: 100,
-        faces: [{ descriptor: [0.1] }],
+        faces: [{ descriptor: [0.1], box: { x: 0, width: 100 } }],
       } as unknown as Photo
       const p2 = {
         id: 'p2',
         timestamp: 200,
-        faces: [{ descriptor: [0.2] }],
+        faces: [{ descriptor: [0.2], box: { x: 0, width: 100 } }],
       } as unknown as Photo
       const p3 = {
         id: 'p3',
         timestamp: 300,
-        faces: [{ descriptor: [0.1] }],
+        faces: [{ descriptor: [0.1], box: { x: 0, width: 100 } }],
       } as unknown as Photo // Subject A again
 
       const clusterA = { id: 'A', descriptor: [0.1] } as unknown as FaceCluster
@@ -101,22 +101,22 @@ describe('selection-algorithm', () => {
       const twoShot = {
         id: 'ts1',
         timestamp: 100,
-        faces: [{ descriptor: [0.1] }, { descriptor: [0.5] }],
+        faces: [{ descriptor: [0.1], box: { x: 0, width: 100 } }, { descriptor: [0.5], box: { x: 0, width: 100 } }],
       } as unknown as Photo
       const soloA = {
         id: 'sa1',
         timestamp: 200,
-        faces: [{ descriptor: [0.1] }],
+        faces: [{ descriptor: [0.1], box: { x: 0, width: 100 } }],
       } as unknown as Photo
       const soloB1 = {
         id: 'sb1',
         timestamp: 300,
-        faces: [{ descriptor: [0.5] }],
+        faces: [{ descriptor: [0.5], box: { x: 0, width: 100 } }],
       } as unknown as Photo
       const soloB2 = {
         id: 'sb2',
         timestamp: 400,
-        faces: [{ descriptor: [0.5] }],
+        faces: [{ descriptor: [0.5], box: { x: 0, width: 100 } }],
       } as unknown as Photo
 
       const clusterA = { id: 'A', descriptor: [0.1] } as unknown as FaceCluster
@@ -155,17 +155,17 @@ describe('selection-algorithm', () => {
       const twoShot = {
         id: 'ts1',
         timestamp: 100,
-        faces: [{ descriptor: [0.1] }, { descriptor: [0.5] }],
+        faces: [{ descriptor: [0.1], box: { x: 0, width: 100 } }, { descriptor: [0.5], box: { x: 0, width: 100 } }],
       } as unknown as Photo
       const soloA = {
         id: 'sa1',
         timestamp: 200,
-        faces: [{ descriptor: [0.1] }],
+        faces: [{ descriptor: [0.1], box: { x: 0, width: 100 } }],
       } as unknown as Photo
       const soloB = {
         id: 'sb1',
         timestamp: 300,
-        faces: [{ descriptor: [0.5] }],
+        faces: [{ descriptor: [0.5], box: { x: 0, width: 100 } }],
       } as unknown as Photo
 
       const clusterA = { id: 'A', descriptor: [0.1] } as unknown as FaceCluster
@@ -209,28 +209,28 @@ describe('selection-algorithm', () => {
       const pairAB = {
         id: 'pairAB',
         timestamp: 100,
-        faces: [{ descriptor: [0.1] }, { descriptor: [0.2] }],
+        faces: [{ descriptor: [0.1], box: { x: 0, width: 100 } }, { descriptor: [0.2], box: { x: 0, width: 100 } }],
       } as unknown as Photo
 
       const singleA = {
         id: 'singleA',
         timestamp: 200,
-        faces: [{ descriptor: [0.1] }],
+        faces: [{ descriptor: [0.1], box: { x: 0, width: 100 } }],
       } as unknown as Photo
       const singleB = {
         id: 'singleB',
         timestamp: 300,
-        faces: [{ descriptor: [0.2] }],
+        faces: [{ descriptor: [0.2], box: { x: 0, width: 100 } }],
       } as unknown as Photo
       const singleC = {
         id: 'singleC',
         timestamp: 400,
-        faces: [{ descriptor: [0.3] }],
+        faces: [{ descriptor: [0.3], box: { x: 0, width: 100 } }],
       } as unknown as Photo
       const singleD = {
         id: 'singleD',
         timestamp: 500,
-        faces: [{ descriptor: [0.4] }],
+        faces: [{ descriptor: [0.4], box: { x: 0, width: 100 } }],
       } as unknown as Photo
 
       // Need enough singles to fill the quota if pair is skipped
@@ -317,27 +317,27 @@ describe('selection-algorithm', () => {
       const p1 = {
         id: 'p1',
         timestamp: 1000,
-        faces: [{ descriptor: [0.1] }],
+        faces: [{ descriptor: [0.1], box: { x: 0, width: 100 } }],
       } as unknown as Photo
       const p2 = {
         id: 'p2',
         timestamp: 2000,
-        faces: [{ descriptor: [0.1] }],
+        faces: [{ descriptor: [0.1], box: { x: 0, width: 100 } }],
       } as unknown as Photo
       const p3 = {
         id: 'p3',
         timestamp: 3000,
-        faces: [{ descriptor: [0.1] }],
+        faces: [{ descriptor: [0.1], box: { x: 0, width: 100 } }],
       } as unknown as Photo
       const p4 = {
         id: 'p4',
         timestamp: 4000,
-        faces: [{ descriptor: [0.1] }],
+        faces: [{ descriptor: [0.1], box: { x: 0, width: 100 } }],
       } as unknown as Photo
       const p5 = {
         id: 'p5',
         timestamp: 5000,
-        faces: [{ descriptor: [0.1] }],
+        faces: [{ descriptor: [0.1], box: { x: 0, width: 100 } }],
       } as unknown as Photo
 
       const clusterA = { id: 'A', descriptor: [0.1] } as unknown as FaceCluster

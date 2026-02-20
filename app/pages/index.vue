@@ -429,23 +429,33 @@ onBeforeUnmount(() => {
           </div>
 
           <!-- Target Count -->
-          <div class="mb-4">
+          <div class="mb-6">
             <h3 class="text-lg font-semibold text-black mb-4">選ぶ写真の枚数</h3>
-            <div class="flex items-center gap-4">
-              <input
-                v-model.number="targetCount"
-                type="range"
-                min="5"
-                max="50"
-                step="1"
-                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#FF6B6B]"
-              />
-              <span class="text-xl font-bold text-[#FF6B6B] w-12 text-right">{{ targetCount }}枚</span>
-            </div>
-            <div class="flex justify-between text-xs text-gray-500 mt-1 px-1">
-              <span>5枚</span>
-              <span>25枚</span>
-              <span>50枚</span>
+            <div class="flex items-center gap-6">
+              <div class="w-[70%]">
+                <input
+                  v-model.number="targetCount"
+                  type="range"
+                  min="5"
+                  max="100"
+                  step="1"
+                  class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#FF6B6B]"
+                />
+                <div class="flex justify-between text-xs text-gray-500 mt-2 px-1">
+                  <span>5枚</span>
+                  <span>50枚</span>
+                  <span>100枚</span>
+                </div>
+              </div>
+              <div class="flex items-baseline shrink-0 border-b-2 border-transparent hover:border-[#FFD4C4] focus-within:border-[#FF6B6B] transition-colors pb-1 px-2">
+                <input
+                  v-model.number="targetCount"
+                  type="number"
+                  min="1"
+                  class="text-4xl font-extrabold text-[#FF6B6B] w-20 text-right bg-transparent outline-none font-sans [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <span class="text-xl font-bold text-[#FF6B6B]">枚</span>
+              </div>
             </div>
           </div>
 

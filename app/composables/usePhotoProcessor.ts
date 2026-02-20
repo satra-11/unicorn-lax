@@ -326,14 +326,12 @@ export const usePhotoProcessor = () => {
                   // Close the crop bitmap
                   cropBitmap?.close()
                 } else if (detectionResult) {
-                   // Even if no faces, we might want blur score and dimensions
-                   photo.width = detectionResult.width
-                   photo.height = detectionResult.height
-                   photo.blurScore = detectionResult.blurScore
+                  // Even if no faces, we might want blur score and dimensions
+                  photo.width = detectionResult.width
+                  photo.height = detectionResult.height
+                  photo.blurScore = detectionResult.blurScore
                 }
               }
-
-
             }
 
             // Generate full-photo thumbnail for preview

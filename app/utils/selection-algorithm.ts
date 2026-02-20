@@ -104,13 +104,12 @@ export async function selectGroupBalancedPhotos(
     if (img.matchedFaces.length > 0) {
       // Average metrics across matched faces
       const avgSmile =
-        img.matchedFaces.reduce((sum, f) => sum + (f.smileScore ?? 0), 0) /
-        img.matchedFaces.length
+        img.matchedFaces.reduce((sum, f) => sum + (f.smileScore ?? 0), 0) / img.matchedFaces.length
       const avgPan =
         img.matchedFaces.reduce((sum, f) => sum + Math.abs(f.panScore ?? 0), 0) /
         img.matchedFaces.length
-        // panScore of 0 is Front. We want 0. So score should be higher if pan is lower.
-        // Let's use (1 - abs(pan)) as "Frontality" score.
+      // panScore of 0 is Front. We want 0. So score should be higher if pan is lower.
+      // Let's use (1 - abs(pan)) as "Frontality" score.
 
       const avgFaceScore =
         img.matchedFaces.reduce((sum, f) => sum + (f.score ?? 0), 0) / img.matchedFaces.length
@@ -147,9 +146,9 @@ export async function selectGroupBalancedPhotos(
       // Prefer Group: Bonus for > 1 subject
       if (img.subjects.length > 1) qScore += bias * 2
     } else if (bias < 0) {
-       // Prefer Solo: Bonus for == 1 subject (by subtracting bias which is negative)
-       // Or simpler: Penalty for > 1
-       if (img.subjects.length === 1) qScore -= bias * 2 // bias is neg, so this adds score
+      // Prefer Solo: Bonus for == 1 subject (by subtracting bias which is negative)
+      // Or simpler: Penalty for > 1
+      if (img.subjects.length === 1) qScore -= bias * 2 // bias is neg, so this adds score
     }
 
     photoQualityScores.set(img.photo.id, qScore)

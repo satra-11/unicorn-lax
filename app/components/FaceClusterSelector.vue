@@ -207,102 +207,100 @@ const getThumbnailUrl = (cluster: FaceCluster) => {
 </script>
 
 <template>
-  
-
-    <div v-if="isLoading" class="text-center py-4">人物を整理しています...</div>
-    <div v-else class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
+  <div v-if="isLoading" class="text-center py-4">人物を整理しています...</div>
+  <div v-else class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
+    <div
+      v-for="cluster in clusters"
+      :key="cluster.id"
+      class="relative border-2 rounded-lg overflow-hidden transition-colors group/card"
+      :class="
+        selectedClusters.has(cluster.id)
+          ? 'border-[#FF6B6B] ring-2 ring-[#FFB5B5]'
+          : 'border-gray-200 hover:border-[#FFB5B5]'
+      "
+    >
+      <!-- Main Card Area -->
       <div
-        v-for="cluster in clusters"
-        :key="cluster.id"
-        class="relative border-2 rounded-lg overflow-hidden transition-colors group/card"
-        :class="
-          selectedClusters.has(cluster.id)
-            ? 'border-[#FF6B6B] ring-2 ring-[#FFB5B5]'
-            : 'border-gray-200 hover:border-[#FFB5B5]'
-        "
+        class="cursor-pointer"
+        @click="props.selectionOnly ? toggleSelection(cluster) : openSettings(cluster)"
       >
-        <!-- Main Card Area -->
-        <div
-          class="cursor-pointer"
-          @click="props.selectionOnly ? toggleSelection(cluster) : openSettings(cluster)"
-        >
-          <div class="aspect-square bg-gray-100 flex items-center justify-center relative">
-            <img
-              v-if="cluster.thumbnail"
-              :src="getThumbnailUrl(cluster)"
-              class="w-full h-full object-cover"
-            />
-            <span v-else class="text-gray-400 text-xs">No Img</span>
-          </div>
-          <div class="p-2 text-center">
-            <div v-if="!props.selectionOnly && editingClusterId === cluster.id" @click.stop>
-              <input
-                :ref="setEditInputRef"
-                v-model="editingLabel"
-                class="w-full text-xs font-medium text-center border border-[#FF6B6B] rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-[#FF6B6B]"
-                @keydown.enter="handleEnter"
-                @blur="commitLabel(cluster)"
-              />
-            </div>
-
-            <div
-              v-else
-              class="flex items-center justify-center gap-1 rounded px-1 transition-colors"
-              :class="props.selectionOnly ? '' : 'cursor-text hover:bg-gray-50'"
-              @click.stop="!props.selectionOnly && startEditing(cluster)"
-            >
-              <span class="text-xs font-medium truncate">{{ cluster.label }}</span>
-            </div>
-            <div class="text-[12px] text-gray-400 mt-0.5">{{ cluster.photoIds.length }} 枚</div>
-          </div>
+        <div class="aspect-square bg-gray-100 flex items-center justify-center relative">
+          <img
+            v-if="cluster.thumbnail"
+            :src="getThumbnailUrl(cluster)"
+            class="w-full h-full object-cover"
+          />
+          <span v-else class="text-gray-400 text-xs">No Img</span>
         </div>
-
-        <!-- Selection Checkbox (Top Right) -->
-        <div
-          v-if="!props.hideSelection"
-          class="absolute top-1 right-1 z-10"
-          @click.stop="toggleSelection(cluster)"
-        >
-          <div
-            class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer shadow-sm"
-            :class="
-              selectedClusters.has(cluster.id)
-                ? 'bg-[#FF6B6B] border-[#FF6B6B] text-white'
-                : 'bg-white/80 border-gray-300 hover:border-[#FF6B6B] text-transparent'
-            "
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                clip-rule="evenodd"
-              />
-            </svg>
+        <div class="p-2 text-center">
+          <div v-if="!props.selectionOnly && editingClusterId === cluster.id" @click.stop>
+            <input
+              :ref="setEditInputRef"
+              v-model="editingLabel"
+              class="w-full text-xs font-medium text-center border border-[#FF6B6B] rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-[#FF6B6B]"
+              @keydown.enter="handleEnter"
+              @blur="commitLabel(cluster)"
+            />
           </div>
+
+          <div
+            v-else
+            class="flex items-center justify-center gap-1 rounded px-1 transition-colors"
+            :class="props.selectionOnly ? '' : 'cursor-text hover:bg-gray-50'"
+            @click.stop="!props.selectionOnly && startEditing(cluster)"
+          >
+            <span class="text-xs font-medium truncate">{{ cluster.label }}</span>
+          </div>
+          <div class="text-[12px] text-gray-400 mt-0.5">{{ cluster.photoIds.length }} 枚</div>
+        </div>
+      </div>
+
+      <!-- Selection Checkbox (Top Right) -->
+      <div
+        v-if="!props.hideSelection"
+        class="absolute top-1 right-1 z-10"
+        @click.stop="toggleSelection(cluster)"
+      >
+        <div
+          class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer shadow-sm"
+          :class="
+            selectedClusters.has(cluster.id)
+              ? 'bg-[#FF6B6B] border-[#FF6B6B] text-white'
+              : 'bg-white/80 border-gray-300 hover:border-[#FF6B6B] text-transparent'
+          "
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+              clip-rule="evenodd"
+            />
+          </svg>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Merge Suggestion Modal -->
-    <MergeSuggestionModal
-      v-if="showMergeSuggestion && similarPairs.length > 0"
-      :pairs="similarPairs"
-      @done="handleMergeDone"
-    />
+  <!-- Merge Suggestion Modal -->
+  <MergeSuggestionModal
+    v-if="showMergeSuggestion && similarPairs.length > 0"
+    :pairs="similarPairs"
+    @done="handleMergeDone"
+  />
 
-    <!-- Settings Modal -->
-    <FaceClusterSettings
-      v-if="settingsCluster && showSettings"
-      :cluster="settingsCluster"
-      :session-id="props.session.id"
-      :is-open="showSettings"
-      :all-clusters="clusters"
-      @close="showSettings = false"
-      @update="handleSettingsUpdate"
-    />
+  <!-- Settings Modal -->
+  <FaceClusterSettings
+    v-if="settingsCluster && showSettings"
+    :cluster="settingsCluster"
+    :session-id="props.session.id"
+    :is-open="showSettings"
+    :all-clusters="clusters"
+    @close="showSettings = false"
+    @update="handleSettingsUpdate"
+  />
 </template>

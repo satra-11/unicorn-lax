@@ -20,7 +20,7 @@ const selectMode = (mode: 'group' | 'growth') => {
       :class="[
         modelValue === 'group'
           ? 'border-[#FF6B6B] bg-[#FFF5F0]'
-          : 'border-gray-200 bg-white hover:border-[#FFD4C4]'
+          : 'border-gray-200 bg-white hover:border-[#FFD4C4]',
       ]"
       @click="selectMode('group')"
     >
@@ -28,9 +28,7 @@ const selectMode = (mode: 'group' | 'growth') => {
         <div
           class="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-colors"
           :class="[
-            modelValue === 'group'
-              ? 'bg-[#FF6B6B] text-white'
-              : 'bg-gray-100 text-gray-400'
+            modelValue === 'group' ? 'bg-[#FF6B6B] text-white' : 'bg-gray-100 text-gray-400',
           ]"
         >
           <span class="i-lucide-users w-6 h-6" />
@@ -43,16 +41,13 @@ const selectMode = (mode: 'group' | 'growth') => {
             みんなバランスよく
           </h3>
           <p class="text-sm text-gray-600 leading-relaxed">
-            複数の子を均等に選びます。<br>
+            複数の子を均等に選びます。<br />
             クラスのアルバムなどに最適です。
           </p>
         </div>
       </div>
       <!-- Checkmark for selected state -->
-      <div
-        v-if="modelValue === 'group'"
-        class="absolute top-3 right-3 text-[#FF6B6B]"
-      >
+      <div v-if="modelValue === 'group'" class="absolute top-3 right-3 text-[#FF6B6B]">
         <span class="i-lucide-check-circle-2 w-5 h-5" />
       </div>
     </div>
@@ -63,7 +58,7 @@ const selectMode = (mode: 'group' | 'growth') => {
       :class="[
         modelValue === 'growth'
           ? 'border-[#FF6B6B] bg-[#FFF5F0]'
-          : 'border-gray-200 bg-white hover:border-[#FFD4C4]'
+          : 'border-gray-200 bg-white hover:border-[#FFD4C4]',
       ]"
       @click="selectMode('growth')"
     >
@@ -71,9 +66,7 @@ const selectMode = (mode: 'group' | 'growth') => {
         <div
           class="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-colors"
           :class="[
-            modelValue === 'growth'
-              ? 'bg-[#FF6B6B] text-white'
-              : 'bg-gray-100 text-gray-400'
+            modelValue === 'growth' ? 'bg-[#FF6B6B] text-white' : 'bg-gray-100 text-gray-400',
           ]"
         >
           <span class="i-lucide-sprout w-6 h-6" />
@@ -86,16 +79,13 @@ const selectMode = (mode: 'group' | 'growth') => {
             ひとりの成長記録
           </h3>
           <p class="text-sm text-gray-600 leading-relaxed">
-            1人の写真を時間順に選びます。<br>
+            1人の写真を時間順に選びます。<br />
             個人の成長記録に最適です。
           </p>
         </div>
       </div>
       <!-- Checkmark for selected state -->
-      <div
-        v-if="modelValue === 'growth'"
-        class="absolute top-3 right-3 text-[#FF6B6B]"
-      >
+      <div v-if="modelValue === 'growth'" class="absolute top-3 right-3 text-[#FF6B6B]">
         <span class="i-lucide-check-circle-2 w-5 h-5" />
       </div>
     </div>

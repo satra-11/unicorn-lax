@@ -192,11 +192,11 @@ function detectBlur(imageData: ImageData): number {
 
     let variance = 0
     for (let i = 0; i < laplacian.length; i++) {
-        // Only count inner pixels to match mean calculation context
-        // Simplified: iterate all, edge effect is minimal for large images
-        // For strict correctness we should iterate same loop, but this is fast approx
-        const diff = laplacian[i]! - mean
-        variance += diff * diff
+      // Only count inner pixels to match mean calculation context
+      // Simplified: iterate all, edge effect is minimal for large images
+      // For strict correctness we should iterate same loop, but this is fast approx
+      const diff = laplacian[i]! - mean
+      variance += diff * diff
     }
     variance /= count
 
@@ -240,8 +240,8 @@ self.onmessage = async (e: MessageEvent) => {
       console.time(`FaceDetection-${id}`)
 
       let input: any = imageBitmap
-      let width = imageBitmap.width
-      let height = imageBitmap.height
+      const width = imageBitmap.width
+      const height = imageBitmap.height
       let imageData: ImageData | null = null
 
       if (typeof OffscreenCanvas !== 'undefined') {
@@ -252,9 +252,9 @@ self.onmessage = async (e: MessageEvent) => {
           input = canvas
           // Get ImageData for blur detection
           try {
-             imageData = ctx.getImageData(0, 0, width, height)
-          } catch(e) {
-             console.warn('Failed to get ImageData', e)
+            imageData = ctx.getImageData(0, 0, width, height)
+          } catch (e) {
+            console.warn('Failed to get ImageData', e)
           }
         }
       }
@@ -290,31 +290,31 @@ self.onmessage = async (e: MessageEvent) => {
         // Simple heuristic using nose and eye/jaw landmarks
         // Not perfect but sufficient for "looking at camera" check
         // Ideally use PnP algorithm but that requires 3D model reference
-        
+
         // face-api.js returns 68 points
         // 30: Nose tip
         // 0: Left jaw (actually right side of image)
         // 16: Right jaw (left side of image)
         // 27: Nose root (between eyes)
         // 8: Chin
-        
+
         const nose = d.landmarks.positions[30]
         const leftJaw = d.landmarks.positions[0]
         const rightJaw = d.landmarks.positions[16]
-        
+
         // Pan: deviations of nose from center of jaws
         const jawWidth = Math.abs(rightJaw!.x - leftJaw!.x)
         const noseX = nose!.x
         const centerX = (leftJaw!.x + rightJaw!.x) / 2
         // If nose is to the right of center (in image), they are looking right
         // Normalize by jaw width/2
-        const pan = (noseX - centerX) / (jawWidth / 2) 
+        const pan = (noseX - centerX) / (jawWidth / 2)
         // pan 0 = front, -1 = left, 1 = right (approx)
-        
+
         // Tilt: nose length ratio? Or simple "is nose explicitly high/low"
-        // Just return 0 for now or simple heuristic if needed. 
+        // Just return 0 for now or simple heuristic if needed.
         // Let's rely on Pan mostly for "looking away".
-        const tilt = 0 
+        const tilt = 0
 
         return {
           detection: d.detection.box,
@@ -322,19 +322,19 @@ self.onmessage = async (e: MessageEvent) => {
           score: d.detection.score,
           smileScore: d.expressions.happy, // 0-1
           panScore: pan,
-          tiltScore: tilt
-        } 
+          tiltScore: tilt,
+        }
       })
 
-      postMessage({ 
-          type: 'DETECT_SUCCESS', 
-          id, 
-          payload: {
-              faces: results,
-              blurScore: blurScore,
-              width,
-              height
-          }
+      postMessage({
+        type: 'DETECT_SUCCESS',
+        id,
+        payload: {
+          faces: results,
+          blurScore: blurScore,
+          width,
+          height,
+        },
       })
 
       if (imageBitmap && typeof (imageBitmap as any).close === 'function') {

@@ -94,7 +94,7 @@ const generateAlbum = async () => {
   isSelecting.value = true
   // Reset finalized state if regenerating
   isFinalized.value = false
-  
+
   try {
     if (mode.value === 'group') {
       generatedPhotos.value = await selectGroupBalancedPhotos(
@@ -224,19 +224,33 @@ watch(step, (newStep) => {
   }
 })
 
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return ''
-  try {
-    const d = new Date(dateStr)
-    return d.toLocaleString('ja-JP', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  } catch (e) {
-    return dateStr
+const getPhotoMetrics = (photo: Photo) => {
+  let smile = 0
+  let orientation = 0
+  let center = 0
+  const blur = photo.blurScore ?? 0
+
+  if (photo.faces && photo.faces.length > 0) {
+    smile = photo.faces.reduce((sum, f) => sum + (f.smileScore ?? 0), 0) / photo.faces.length
+
+    const avgPan =
+      photo.faces.reduce((sum, f) => sum + Math.abs(f.panScore ?? 0), 0) / photo.faces.length
+    orientation = 1 - avgPan
+
+    const avgCenterX =
+      photo.faces.reduce((sum, f) => {
+        const cx = f.box.x + f.box.width / 2
+        const photoWidth = photo.width || 1000
+        return sum + Math.abs(cx / photoWidth - 0.5)
+      }, 0) / photo.faces.length
+    center = 1 - avgCenterX * 2
+  }
+
+  return {
+    smile: Math.round(smile * 100),
+    orientation: Math.round(orientation * 100),
+    blur: Math.round(blur * 100),
+    center: Math.round(center * 100),
   }
 }
 
@@ -447,7 +461,9 @@ onBeforeUnmount(() => {
                   <span>100枚</span>
                 </div>
               </div>
-              <div class="flex items-baseline shrink-0 border-b-2 border-transparent hover:border-[#FFD4C4] focus-within:border-[#FF6B6B] transition-colors pb-1 px-2">
+              <div
+                class="flex items-baseline shrink-0 border-b-2 border-transparent hover:border-[#FFD4C4] focus-within:border-[#FF6B6B] transition-colors pb-1 px-2"
+              >
                 <input
                   v-model.number="targetCount"
                   type="number"
@@ -462,12 +478,12 @@ onBeforeUnmount(() => {
           <!-- Face/Group Selection -->
           <div class="mt-8">
             <h3 class="text-lg font-semibold text-black mb-4">人物を選択</h3>
-          <FaceClusterSelector
-            :session="currentSession"
-            :single-selection="mode === 'growth'"
-            selection-only
-            @select="onFacesSelected"
-          />
+            <FaceClusterSelector
+              :session="currentSession"
+              :single-selection="mode === 'growth'"
+              selection-only
+              @select="onFacesSelected"
+            />
           </div>
 
           <!-- Back button -->
@@ -496,8 +512,7 @@ onBeforeUnmount(() => {
           <div class="text-center mb-6">
             <h2 class="text-2xl font-bold text-gray-900">アルバムの仕上げ</h2>
             <p class="mt-1 text-gray-600">
-              {{ confirmedPhotos.length }} 枚の写真が選ばれました。
-              好みに合わせて調整できます。
+              {{ confirmedPhotos.length }} 枚の写真が選ばれました。 好みに合わせて調整できます。
             </p>
           </div>
 
@@ -507,7 +522,7 @@ onBeforeUnmount(() => {
               <span class="i-lucide-sliders-horizontal w-5 h-5" />
               好みで微調整
             </h3>
-            
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
               <!-- Smile -->
               <div>
@@ -529,7 +544,9 @@ onBeforeUnmount(() => {
               <div>
                 <div class="flex justify-between mb-1">
                   <label class="text-sm font-semibold text-gray-700">カメラ目線</label>
-                  <span class="text-xs text-gray-500">{{ Math.round(weights.orientation * 100) }}%</span>
+                  <span class="text-xs text-gray-500"
+                    >{{ Math.round(weights.orientation * 100) }}%</span
+                  >
                 </div>
                 <input
                   v-model.number="weights.orientation"
@@ -577,8 +594,23 @@ onBeforeUnmount(() => {
               <div class="col-span-1 md:col-span-2">
                 <div class="flex justify-between mb-1">
                   <label class="text-sm font-semibold text-gray-700">グループバランス</label>
-                  <span class="text-xs font-medium" :class="weights.groupBalance > 0.6 ? 'text-blue-600' : weights.groupBalance < 0.4 ? 'text-pink-600' : 'text-gray-500'">
-                    {{ weights.groupBalance > 0.6 ? 'みんなで写っている写真を優先' : weights.groupBalance < 0.4 ? '個人の写真を優先' : 'バランスよく' }}
+                  <span
+                    class="text-xs font-medium"
+                    :class="
+                      weights.groupBalance > 0.6
+                        ? 'text-blue-600'
+                        : weights.groupBalance < 0.4
+                          ? 'text-pink-600'
+                          : 'text-gray-500'
+                    "
+                  >
+                    {{
+                      weights.groupBalance > 0.6
+                        ? 'みんなで写っている写真を優先'
+                        : weights.groupBalance < 0.4
+                          ? '個人の写真を優先'
+                          : 'バランスよく'
+                    }}
                   </span>
                 </div>
                 <div class="flex items-center gap-3">
@@ -628,13 +660,31 @@ onBeforeUnmount(() => {
                   photo.name
                 }}</span>
               </div>
-              <!-- Scores Overlay (Optional, consistent with debug but useful?) -->
-              <!-- Kept simple for now -->
+              <div
+                class="p-2 grid grid-cols-2 gap-x-2 gap-y-1 bg-gray-50 text-[10px] text-gray-600 border-t"
+              >
+                <div class="flex justify-between">
+                  <span>笑顔:</span>
+                  <span class="font-medium">{{ getPhotoMetrics(photo).smile }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>目線:</span>
+                  <span class="font-medium">{{ getPhotoMetrics(photo).orientation }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>ブレ:</span>
+                  <span class="font-medium">{{ getPhotoMetrics(photo).blur }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>中心:</span>
+                  <span class="font-medium">{{ getPhotoMetrics(photo).center }}</span>
+                </div>
+              </div>
             </div>
           </div>
 
           <div class="flex justify-between items-center pt-4 border-t border-gray-200">
-             <button
+            <button
               class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
               @click="goBackToStep2"
             >
@@ -650,43 +700,46 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Completed View -->
-        <div 
-          v-if="isFinalized" 
+        <div
+          v-if="isFinalized"
           class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in"
         >
           <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 relative overflow-hidden">
-             <!-- Confetti/Success decoration -->
-             <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#FF6B6B] via-[#FF8E53] to-[#FFB347]"></div>
-             
-             <div class="text-center">
-                <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 text-green-600 mb-6 mx-auto">
-                  <span class="i-lucide-check w-10 h-10" />
-                </div>
-                <h2 class="text-3xl font-bold text-gray-900 mb-2">完成です！</h2>
-                <p class="text-gray-600 mb-8">
-                  素敵なアルバムのための写真選びが完了しました。<br>
-                  結果を保存して、大切に使ってくださいね。
-                </p>
+            <!-- Confetti/Success decoration -->
+            <div
+              class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#FF6B6B] via-[#FF8E53] to-[#FFB347]"
+            ></div>
 
-                <div class="flex flex-col gap-3">
-                   <button
-                    class="w-full px-6 py-3 bg-[#FF6B6B] text-white rounded-xl hover:bg-[#e55a5a] font-bold shadow-md transition-all flex items-center justify-center gap-2"
-                    @click="onExport"
-                  >
-                    <span class="i-lucide-download" />
-                    バックアップを保存する
-                  </button>
-                  <button
-                    class="w-full px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-bold transition-all"
-                    @click="isFinalized = false"
-                  >
-                    調整画面に戻る
-                  </button>
-                </div>
-             </div>
+            <div class="text-center">
+              <div
+                class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 text-green-600 mb-6 mx-auto"
+              >
+                <span class="i-lucide-check w-10 h-10" />
+              </div>
+              <h2 class="text-3xl font-bold text-gray-900 mb-2">完成です！</h2>
+              <p class="text-gray-600 mb-8">
+                素敵なアルバムのための写真選びが完了しました。<br />
+                結果を保存して、大切に使ってくださいね。
+              </p>
+
+              <div class="flex flex-col gap-3">
+                <button
+                  class="w-full px-6 py-3 bg-[#FF6B6B] text-white rounded-xl hover:bg-[#e55a5a] font-bold shadow-md transition-all flex items-center justify-center gap-2"
+                  @click="onExport"
+                >
+                  <span class="i-lucide-download" />
+                  バックアップを保存する
+                </button>
+                <button
+                  class="w-full px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-bold transition-all"
+                  @click="isFinalized = false"
+                >
+                  調整画面に戻る
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-
       </template>
     </div>
   </div>

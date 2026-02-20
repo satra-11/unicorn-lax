@@ -101,7 +101,10 @@ describe('selection-algorithm', () => {
       const twoShot = {
         id: 'ts1',
         timestamp: 100,
-        faces: [{ descriptor: [0.1], box: { x: 0, width: 100 } }, { descriptor: [0.5], box: { x: 0, width: 100 } }],
+        faces: [
+          { descriptor: [0.1], box: { x: 0, width: 100 } },
+          { descriptor: [0.5], box: { x: 0, width: 100 } },
+        ],
       } as unknown as Photo
       const soloA = {
         id: 'sa1',
@@ -155,7 +158,10 @@ describe('selection-algorithm', () => {
       const twoShot = {
         id: 'ts1',
         timestamp: 100,
-        faces: [{ descriptor: [0.1], box: { x: 0, width: 100 } }, { descriptor: [0.5], box: { x: 0, width: 100 } }],
+        faces: [
+          { descriptor: [0.1], box: { x: 0, width: 100 } },
+          { descriptor: [0.5], box: { x: 0, width: 100 } },
+        ],
       } as unknown as Photo
       const soloA = {
         id: 'sa1',
@@ -209,7 +215,10 @@ describe('selection-algorithm', () => {
       const pairAB = {
         id: 'pairAB',
         timestamp: 100,
-        faces: [{ descriptor: [0.1], box: { x: 0, width: 100 } }, { descriptor: [0.2], box: { x: 0, width: 100 } }],
+        faces: [
+          { descriptor: [0.1], box: { x: 0, width: 100 } },
+          { descriptor: [0.2], box: { x: 0, width: 100 } },
+        ],
       } as unknown as Photo
 
       const singleA = {

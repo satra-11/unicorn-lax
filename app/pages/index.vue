@@ -124,21 +124,21 @@ const confirmedPhotos = computed(() => generatedPhotos.value.filter((p) => !p.ex
 
 const clusterCounts = computed(() => {
   const counts = new Map<string, number>()
-  selectedClusters.value.forEach(c => counts.set(c.id, 0))
-  
-  confirmedPhotos.value.forEach(photo => {
+  selectedClusters.value.forEach((c) => counts.set(c.id, 0))
+
+  confirmedPhotos.value.forEach((photo) => {
     if (photo.matchedSubjects) {
-      photo.matchedSubjects.forEach(id => {
+      photo.matchedSubjects.forEach((id) => {
         if (counts.has(id)) {
           counts.set(id, counts.get(id)! + 1)
         }
       })
     }
   })
-  
-  return selectedClusters.value.map(c => ({
+
+  return selectedClusters.value.map((c) => ({
     cluster: c,
-    count: counts.get(c.id) || 0
+    count: counts.get(c.id) || 0,
   }))
 })
 
@@ -250,7 +250,7 @@ watch(step, (newStep) => {
       URL.revokeObjectURL(url)
     }
     blobUrls.value.clear()
-    
+
     for (const url of clusterBlobUrls.value.values()) {
       URL.revokeObjectURL(url)
     }
@@ -575,9 +575,13 @@ onBeforeUnmount(() => {
                 </span>
               </div>
             </div>
-            <p class="text-xs text-gray-500 mt-4 flex items-start gap-1.5 leading-relaxed bg-[#FFF9F0] p-3 rounded-lg border border-[#FFE8D6]">
+            <p
+              class="text-xs text-gray-500 mt-4 flex items-start gap-1.5 leading-relaxed bg-[#FFF9F0] p-3 rounded-lg border border-[#FFE8D6]"
+            >
               <span class="i-lucide-info w-4 h-4 text-orange-500 mt-0.5 shrink-0" />
-              <span>「全員が均等に写る」ことを最優先に調整されます。<br/>グループ写真に写っている場合も、それぞれ1枚としてカウントしています。</span>
+              <span
+                >「全員が均等に写る」ことを最優先に調整されます。<br />グループ写真に写っている場合も、それぞれ1枚としてカウントしています。</span
+              >
             </p>
           </div>
 

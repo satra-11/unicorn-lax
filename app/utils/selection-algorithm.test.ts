@@ -10,7 +10,7 @@ vi.mock('./db', async () => {
   return { getDB: vi.fn() }
 })
 vi.mock('./burst-detection', async () => {
-  return { deduplicateBurstPhotos: vi.fn(photos => photos) }
+  return { deduplicateBurstPhotos: vi.fn((photos) => photos) }
 })
 vi.mock('face-api.js', async () => ({
   euclideanDistance: vi.fn(),
@@ -62,8 +62,8 @@ describe('selection-algorithm', () => {
       burstDetection.deduplicateBurstPhotos.mockReturnValue([p1, p2, p3])
 
       // Mock face matching
-      ;(faceapi.euclideanDistance as any).mockImplementation((d1: any, d2: any) => {
-        return Math.abs(d1[0] - d2[0]) // Simple distance
+      vi.mocked(faceapi.euclideanDistance).mockImplementation((d1: unknown, d2: unknown) => {
+        return Math.abs((d1 as number[])[0]! - (d2 as number[])[0]!) // Simple distance
       })
 
       // Threshold is default 0.4.
@@ -131,9 +131,8 @@ describe('selection-algorithm', () => {
       mockDB.getAllFromIndex.mockResolvedValue([twoShot, soloA, soloB1, soloB2])
       // @ts-expect-error -- Mocking return value
       burstDetection.deduplicateBurstPhotos.mockReturnValue([twoShot, soloA, soloB1, soloB2])
-
-      ;(faceapi.euclideanDistance as any).mockImplementation((d1: any, d2: any) => {
-        return Math.abs(d1[0] - d2[0])
+      vi.mocked(faceapi.euclideanDistance).mockImplementation((d1: unknown, d2: unknown) => {
+        return Math.abs((d1 as number[])[0]! - (d2 as number[])[0]!)
       })
 
       const result = await selectGroupBalancedPhotos('session1', [clusterA, clusterB], 3)
@@ -182,9 +181,8 @@ describe('selection-algorithm', () => {
       mockDB.getAllFromIndex.mockResolvedValue([twoShot, soloA, soloB])
       // @ts-expect-error -- Mocking return value
       burstDetection.deduplicateBurstPhotos.mockReturnValue([twoShot, soloA, soloB])
-
-      ;(faceapi.euclideanDistance as any).mockImplementation((d1: any, d2: any) => {
-        return Math.abs(d1[0] - d2[0])
+      vi.mocked(faceapi.euclideanDistance).mockImplementation((d1: unknown, d2: unknown) => {
+        return Math.abs((d1 as number[])[0]! - (d2 as number[])[0]!)
       })
 
       const result = await selectGroupBalancedPhotos('session1', [clusterA, clusterB], 2)
@@ -287,9 +285,8 @@ describe('selection-algorithm', () => {
         singleA2,
         singleB2,
       ])
-
-      ;(faceapi.euclideanDistance as any).mockImplementation((d1: any, d2: any) => {
-        return Math.abs(d1[0] - d2[0])
+      vi.mocked(faceapi.euclideanDistance).mockImplementation((d1: unknown, d2: unknown) => {
+        return Math.abs((d1 as number[])[0]! - (d2 as number[])[0]!)
       })
 
       const result = await selectGroupBalancedPhotos(
@@ -354,8 +351,7 @@ describe('selection-algorithm', () => {
       mockDB.getAllFromIndex.mockResolvedValue([p1, p2, p3, p4, p5])
       // @ts-expect-error -- Mocking return value
       burstDetection.deduplicateBurstPhotos.mockReturnValue([p1, p2, p3, p4, p5])
-
-      ;(faceapi.euclideanDistance as any).mockReturnValue(0) // Perfect match
+      vi.mocked(faceapi.euclideanDistance).mockReturnValue(0) // Perfect match
 
       // Select 3 photos.
       // Range: 1000 to 5000. Duration 4000. Interval 1333.33

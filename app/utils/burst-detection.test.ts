@@ -101,7 +101,7 @@ describe('burst-detection', () => {
 
     it('should select photo with more matched subjects', () => {
       // Mock euclideanDistance to simulate matching
-      ;(faceapi.euclideanDistance as any).mockReturnValue(0.4) // Match (assuming threshold is 0.6)
+      vi.mocked(faceapi.euclideanDistance).mockReturnValue(0.4) // Match (assuming threshold is 0.6)
 
       const targetCluster: FaceCluster = {
         id: 'c1',

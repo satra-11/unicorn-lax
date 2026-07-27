@@ -26,43 +26,6 @@ AIによる顔認識で、大量の写真から均等・効率的にアルバム
 | CI/CD            | GitHub Actions                                                               |
 | テスト           | [Vitest](https://vitest.dev/)                                                |
 
-## セットアップ
-
-```bash
-pnpm install
-```
-
-## 開発
-
-```bash
-pnpm dev
-```
-
-## ビルド
-
-```bash
-pnpm build
-```
-
-## テスト
-
-```bash
-pnpm vitest run
-```
-
-## デプロイ
-
-`main` ブランチへの push 時に GitHub Actions 経由で Cloudflare Pages へ自動デプロイされます。
-
-### 必要なシークレット
-
-GitHub リポジトリの Settings > Secrets に以下を設定:
-
-| シークレット名          | 説明                                       |
-| :---------------------- | :----------------------------------------- |
-| `CLOUDFLARE_API_TOKEN`  | Cloudflare API トークン (Pages の編集権限) |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare アカウント ID                   |
-
 ## ライセンス
 
 [MIT](./LICENSE)

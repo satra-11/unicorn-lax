@@ -30,7 +30,7 @@ const weights = ref({
   faceScore: 0,
   orientation: 0,
   blur: 0,
-  groupBalance: 0.5,
+  groupBalance: 1,
 })
 
 const stepDefs = [
@@ -633,39 +633,27 @@ onBeforeUnmount(() => {
 
               <!-- Group Balance -->
               <div class="col-span-1 md:col-span-2">
-                <div class="flex justify-between mb-1">
-                  <label class="text-sm font-semibold text-gray-700">グループバランス</label>
-                  <span
-                    class="text-xs font-medium"
-                    :class="
-                      weights.groupBalance > 0.6
-                        ? 'text-blue-600'
-                        : weights.groupBalance < 0.4
-                          ? 'text-pink-600'
-                          : 'text-gray-500'
-                    "
+                <label class="text-sm font-semibold text-gray-700 block mb-2">写真の優先度</label>
+                <div class="flex bg-[#FFF9F0] p-1 rounded-xl border border-[#FFE8D6]">
+                  <button
+                    class="flex-1 py-2.5 text-sm font-bold rounded-lg transition-all duration-200"
+                    :class="weights.groupBalance < 0.5 ? 'bg-white shadow-sm text-[#FF6B6B] border border-orange-100' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'"
+                    @click="weights.groupBalance = 0"
                   >
-                    {{
-                      weights.groupBalance > 0.6
-                        ? 'みんなで写っている写真を優先'
-                        : weights.groupBalance < 0.4
-                          ? '個人の写真を優先'
-                          : 'バランスよく'
-                    }}
-                  </span>
+                    個人の写真
+                  </button>
+                  <button
+                    class="flex-1 py-2.5 text-sm font-bold rounded-lg transition-all duration-200"
+                    :class="weights.groupBalance >= 0.5 ? 'bg-white shadow-sm text-[#FF6B6B] border border-orange-100' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'"
+                    @click="weights.groupBalance = 1"
+                  >
+                    グループ重視
+                  </button>
                 </div>
-                <div class="flex items-center gap-3">
-                  <span class="text-xs text-gray-500 w-12 text-right">個人</span>
-                  <input
-                    v-model.number="weights.groupBalance"
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.1"
-                    class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#FF8E53]"
-                  />
-                  <span class="text-xs text-gray-500 w-12">グループ</span>
-                </div>
+                <p class="text-xs text-gray-500 mt-2 flex items-center gap-1.5">
+                  <span class="i-lucide-info w-3.5 h-3.5" />
+                  {{ weights.groupBalance >= 0.5 ? 'みんなで写っている写真を優先して選びます。' : '1人で写っている写真を優先して選びます。' }}
+                </p>
               </div>
             </div>
 

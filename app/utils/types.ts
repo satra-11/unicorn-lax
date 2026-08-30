@@ -23,7 +23,7 @@ export interface Photo {
   thumbnail?: Blob
   excluded?: boolean
   hash?: string
-  detectionModel?: 'ssd' | 'tiny'
+  detectionModel?: 'ssd'
   matchedSubjects?: string[] // Added to track which selected subjects appear in this photo
 }
 

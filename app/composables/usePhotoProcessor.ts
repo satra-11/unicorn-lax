@@ -8,13 +8,13 @@ const isProcessing = ref(false)
 const progress = ref(0)
 const total = ref(0)
 const currentSession = ref<ProcessingSession | null>(null)
-const faceModel = ref<'ssd' | 'tiny'>('ssd') // Default to SSD
+const faceModel = ref<'ssd'>('ssd') // Default to SSD
 const processingStatus = ref('')
 
 // Initialize from localStorage if client-side
 if (import.meta.client) {
   const saved = localStorage.getItem('face-model')
-  if (saved === 'ssd' || saved === 'tiny') {
+  if (saved === 'ssd') {
     faceModel.value = saved
   }
 }
@@ -69,27 +69,17 @@ const initWorker = () => {
     console.log('Sending INIT message to worker with model:', faceModel.value)
     worker.postMessage({
       type: 'INIT',
-      id: 'init',
-      payload: { useSsd: faceModel.value === 'ssd' },
+      id: 'init'
     })
   } catch (e) {
     console.error('Failed to init worker', e)
   }
 }
 
-const setFaceModel = (model: 'ssd' | 'tiny') => {
+const setFaceModel = (model: 'ssd') => {
   faceModel.value = model
   if (import.meta.client) {
     localStorage.setItem('face-model', model)
-  }
-
-  if (worker) {
-    console.log('Switching worker model to:', model)
-    worker.postMessage({
-      type: 'SET_MODEL',
-      id: 'config',
-      payload: { useSsd: model === 'ssd' },
-    })
   }
 }
 
@@ -188,7 +178,6 @@ export const usePhotoProcessor = () => {
             const existing = await getPhotoByHash(hash)
             if (existing) {
               // Check if existing photo was analyzed with the SAME model
-              // If model changed (e.g. from 'tiny' to 'ssd'), we should re-analyze
               const modelMatch = existing.detectionModel === faceModel.value
 
               if (modelMatch) {

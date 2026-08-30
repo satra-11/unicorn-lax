@@ -5,10 +5,6 @@ import type * as FaceApi from 'face-api.js'
 const MODELS_URL = '/models'
 const MIN_CONFIDENCE = 0.45
 
-// NEW: Configuration to easily switch between models
-let useSsdMobilenetv1 = true
-let currentModelLoaded = false
-
 let faceapi: typeof FaceApi
 let isLoaded = false
 
@@ -76,7 +72,7 @@ if (typeof (self as any).screen === 'undefined') {
 // ----------------------------------------------------------------------
 
 async function loadModels() {
-  if (isLoaded && currentModelLoaded) return
+  if (isLoaded) return
   console.log('Worker: Loading face-api.js...')
 
   try {
@@ -113,21 +109,12 @@ async function loadModels() {
       }
     }
 
-    if (useSsdMobilenetv1) {
-      console.log('Worker: Loading SSD MobileNet V1...')
-      postMessage({
-        type: 'LOADING_PROGRESS',
-        payload: { message: '顔検出モデルをダウンロード中...' },
-      })
-      await faceapi.nets.ssdMobilenetv1.loadFromUri(MODELS_URL)
-    } else {
-      console.log('Worker: Loading TinyFaceDetector...')
-      postMessage({
-        type: 'LOADING_PROGRESS',
-        payload: { message: '顔検出モデルをダウンロード中...' },
-      })
-      await faceapi.nets.tinyFaceDetector.loadFromUri(MODELS_URL + '/tiny_face_detector')
-    }
+    console.log('Worker: Loading SSD MobileNet V1...')
+    postMessage({
+      type: 'LOADING_PROGRESS',
+      payload: { message: '顔検出モデルをダウンロード中...' },
+    })
+    await faceapi.nets.ssdMobilenetv1.loadFromUri(MODELS_URL)
 
     if (!isLoaded) {
       postMessage({
@@ -141,7 +128,6 @@ async function loadModels() {
     }
 
     isLoaded = true
-    currentModelLoaded = true
     postMessage({ type: 'LOADING_PROGRESS', payload: { message: '' } })
     console.log('Worker: Models loaded successfully.')
   } catch (error) {
@@ -220,21 +206,10 @@ self.onmessage = async (e: MessageEvent) => {
 
   try {
     if (type === 'INIT') {
-      if (payload && typeof payload.useSsd !== 'undefined') {
-        useSsdMobilenetv1 = payload.useSsd
-      }
       await loadModels()
       postMessage({ type: 'INIT_SUCCESS', id })
-    } else if (type === 'SET_MODEL') {
-      const newUseSsd = payload.useSsd
-      if (newUseSsd !== useSsdMobilenetv1) {
-        useSsdMobilenetv1 = newUseSsd
-        currentModelLoaded = false // Force reload of detector
-        await loadModels()
-      }
-      postMessage({ type: 'SET_MODEL_SUCCESS', id })
     } else if (type === 'DETECT') {
-      if (!isLoaded || !currentModelLoaded) await loadModels()
+      if (!isLoaded) await loadModels()
 
       const { imageBitmap } = payload
       console.time(`FaceDetection-${id}`)
@@ -259,16 +234,7 @@ self.onmessage = async (e: MessageEvent) => {
         }
       }
 
-      let options: FaceApi.SsdMobilenetv1Options | FaceApi.TinyFaceDetectorOptions
-
-      if (useSsdMobilenetv1) {
-        options = new faceapi.SsdMobilenetv1Options({ minConfidence: MIN_CONFIDENCE })
-      } else {
-        options = new faceapi.TinyFaceDetectorOptions({
-          inputSize: 512,
-          scoreThreshold: MIN_CONFIDENCE,
-        })
-      }
+      const options = new faceapi.SsdMobilenetv1Options({ minConfidence: MIN_CONFIDENCE })
 
       // Detect with Expressions
       const detections = await faceapi
@@ -279,7 +245,7 @@ self.onmessage = async (e: MessageEvent) => {
 
       console.timeEnd(`FaceDetection-${id}`)
       console.log(
-        `Worker: Detected ${detections.length} faces for ${id} using ${useSsdMobilenetv1 ? 'SSD' : 'Tiny'}`,
+        `Worker: Detected ${detections.length} faces for ${id} using SSD`,
       )
 
       // Calculate blur score

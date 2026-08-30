@@ -53,24 +53,6 @@ const onFolderSelect = async (event: Event) => {
             <div class="model-card-name">しっかりモード</div>
             <div class="model-card-desc">どんな写真もユニコーンに任せろ！</div>
           </label>
-
-          <!-- 🐇 Rabbit Mode -->
-          <label
-            class="model-card rabbit-card"
-            :class="{ 'model-card-active': faceModel === 'tiny' }"
-          >
-            <input
-              type="radio"
-              name="faceModel"
-              value="tiny"
-              :checked="faceModel === 'tiny'"
-              class="sr-only"
-              @change="setFaceModel('tiny')"
-            />
-            <div class="model-card-icon">🐇</div>
-            <div class="model-card-name">さくさくモード</div>
-            <div class="model-card-desc">早いけど、おっちょこちょい...</div>
-          </label>
         </div>
       </div>
 

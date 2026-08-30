@@ -11,8 +11,6 @@ import {
   clearExistingData,
   clearPhotos,
   getLastSession,
-  exportDatabase,
-  importDatabase,
 } from '~/utils/db'
 
 const { isProcessing, progress: _progress, total: _total, currentSession } = usePhotoProcessor()
@@ -22,7 +20,6 @@ const generatedPhotos = ref<Photo[]>([])
 const mode = ref<'group' | 'growth'>('group')
 const targetCount = ref(10)
 const isSelecting = ref(false)
-const fileInput = ref<HTMLInputElement | null>(null)
 const isConfirmed = ref(false)
 const isFinalized = ref(false)
 const weights = ref({
@@ -175,52 +172,7 @@ const onClearPhotos = async () => {
   }
 }
 
-const onExport = async () => {
-  try {
-    const json = await exportDatabase()
-    const blob = new Blob([json], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `unicorn-lax-backup-${new Date().toISOString().split('T')[0]}.json`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  } catch (e) {
-    console.error('Export failed:', e)
-    alert('バックアップの保存に失敗しました。')
-  }
-}
 
-const triggerImport = () => {
-  fileInput.value?.click()
-}
-
-const onImportFile = async (event: Event) => {
-  const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
-  if (!file) return
-
-  if (!confirm('保存済みのデータをすべて入れ替えますか？一度入れ替えると元に戻せません。')) {
-    target.value = '' // reset
-    return
-  }
-
-  const reader = new FileReader()
-  reader.onload = async (e) => {
-    try {
-      const json = e.target?.result as string
-      await importDatabase(json)
-      alert('データの読み込みが完了しました。画面を更新します。')
-      window.location.reload()
-    } catch (error) {
-      console.error('Import failed:', error)
-      alert('データの読み込みに失敗しました。正しいバックアップファイルか確認してください。')
-    }
-  }
-  reader.readAsText(file)
-}
 
 // Thumbnail handling for step3
 const blobUrls = ref(new Map<string, string>())
@@ -345,33 +297,8 @@ onBeforeUnmount(() => {
 
             <PhotoUploader :current-session-id="currentSession?.id" />
 
-            <!-- Backup / Restore / Reset Actions -->
+            <!-- Reset Actions -->
             <div class="pt-6 border-t border-[#FFE8D6] flex flex-wrap justify-center gap-4">
-              <button
-                class="px-4 py-2 text-sm bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-lg transition-colors flex items-center gap-2"
-                @click="onExport"
-              >
-                バックアップ保存
-              </button>
-
-              <button
-                class="px-4 py-2 text-sm bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-lg transition-colors flex items-center gap-2 relative overflow-hidden"
-                @click="triggerImport"
-              >
-                バックアップから復元
-                <input
-                  ref="fileInput"
-                  type="file"
-                  accept=".json"
-                  class="absolute inset-0 opacity-0 cursor-pointer"
-                  @change="onImportFile"
-                />
-              </button>
-
-              <div
-                class="w-full sm:w-auto h-px sm:h-auto sm:border-l border-gray-200 mx-2 hidden sm:block"
-              ></div>
-
               <button
                 class="px-4 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                 @click="onClearPhotos"
@@ -748,13 +675,6 @@ onBeforeUnmount(() => {
               </p>
 
               <div class="flex flex-col gap-3">
-                <button
-                  class="w-full px-6 py-3 bg-[#FF6B6B] text-white rounded-xl hover:bg-[#e55a5a] font-bold shadow-md transition-all flex items-center justify-center gap-2"
-                  @click="onExport"
-                >
-                  <span class="i-lucide-download" />
-                  バックアップを保存する
-                </button>
                 <button
                   class="w-full px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-bold transition-all"
                   @click="isFinalized = false"

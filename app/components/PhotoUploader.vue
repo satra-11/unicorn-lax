@@ -30,11 +30,9 @@ const onFolderSelect = async (event: Event) => {
       v-if="(!isProcessing && !currentSession?.status) || currentSession?.status === 'completed'"
       class="text-center"
     >
-      <h2 class="text-xl font-bold mb-4 text-black">読み込みモードをえらぶ</h2>
-
       <!-- Model Selection -->
       <div class="mb-6 max-w-md mx-auto text-left">
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 gap-3">
           <!-- 🦄 Unicorn Mode -->
           <label
             class="model-card unicorn-card"
@@ -48,7 +46,6 @@ const onFolderSelect = async (event: Event) => {
               class="sr-only"
               @change="setFaceModel('ssd')"
             />
-            <span class="model-card-badge unicorn-badge">推奨</span>
             <div class="model-card-icon">🦄</div>
             <div class="model-card-name">しっかりモード</div>
             <div class="model-card-desc">どんな写真もユニコーンに任せろ！</div>

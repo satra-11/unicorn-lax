@@ -96,7 +96,6 @@ export const usePhotoProcessor = () => {
     if (isProcessing.value) return
     initWorker()
 
-    // ... (rest of logic similar, updated for faces)
     const MIN_SIZE = 10 * 1024 // 10KB
     const fileArray = Array.from(files).filter(
       (f) => f.type.startsWith('image/') && f.size >= MIN_SIZE,

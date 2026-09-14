@@ -1,73 +1,91 @@
-# ADR 001: Face Recognition Model Selection
+# ADR 002: クライアントサイドデータ永続化戦略
 
-## Status
+## ステータス
 
-Accepted
+承認済み (Accepted)
 
-## Date
+## 日付
 
 2026-02-16
 
-## Context
+## コンテキスト
 
-The application is a client-side photo selection tool that helps users select photos of their children from a large set (up to 10,000 photos).
-The key requirements are:
+本アプリケーションは、数千枚から最大10,000枚の写真をローカルブラウザ内で解析・選定するツールである。
+解析処理には以下のような多様なデータが生成される:
 
-1.  **Privacy**: Photos must not be uploaded to a server. Processing must happen locally.
-2.  **Performance**: Must be able to process thousands of photos in a reasonable time.
-3.  **Functionality**: Needs to detect faces and finding "similar" faces to group them (Clustering) without prior training data (Unsupervised / Semi-supervised).
-4.  **Cost**: Should be free to operate (no per-API-call costs).
+1. **写真メタデータ**: ファイル名、相対パス、Exif撮影日時、重複検知用ハッシュ、選定除外フラグなど。
+2. **検出された顔情報**: 128次元の顔特徴量ベクトル（`Float32Array`）、顔のバウンディングボックス座標、顔切り抜きサムネイル画像。
+3. **サムネイル画像**: 一覧表示および高速プレビュー用の軽量バイナリデータ（`Blob`）。
+4. **顔クラスタリング情報**: クラスタID、人物ラベル、重心特徴量ベクトル、代表顔画像、類似度しきい値、分類された写真IDリスト。
+5. **処理セッション情報**: フォルダ名、総ファイル数、処理進捗、ステータス。
 
-## Decision
+サーバーに一切データを送信しないプライバシー重視の設計であるため、ブラウザを閉じたり再読み込みしたりしても作業を再開できるよう、これらのデータをブラウザ内に安全かつ高速に永続化する仕組みが必要である。
 
-We have decided to use **face-api.js** running in a Web Worker.
+主な要件は以下の通り:
+- **大容量対応**: 数千枚分のメタデータ・特徴量・サムネイル（数百MB〜数GB規模）を保存できること。
+- **バイナリ対応**: `Blob` や `Float32Array` などのバイナリデータを効率的に扱えること。
+- **検索性能**: セッションID、タイムスタンプ、ハッシュ値などによるインデックス検索が高速に行えること。
+- **非同期処理**: 大量データの読み書き時にメインスレッド（UI）をブロックしないこと。
 
-### Specific Models
+## 決定事項
 
-- **Detector**: `TinyFaceDetector` (MobileNetV1 based)
-  - Chosen for speed and smaller memory footprint compared to SSD MobileNet V1, which allows for faster processing of large batches of images in the browser.
-- **Landmarks**: `FaceLandmark68Net` (or `FaceLandmark68TinyNet`)
-  - Required for alignment before recognition.
-- **Recognition**: `FaceRecognitionNet` (ResNet-34 based)
-  - Outputs a 128-dimensional feature vector (descriptor) for each face.
+ブラウザ標準の **IndexedDB** を採用し、型安全性とPromiseラッパーを提供する **`idb`** ライブラリを利用する。
 
-## Rationale
+### データベース構成 (`photo-selector-db`)
 
-1.  **Client-Side Execution**: face-api.js is built on top of TensorFlow.js and is optimized for running in the browser. It supports WebGL acceleration and WebAssembly (WASM) backends, making it viable for heavy client-side processing.
-2.  **All-in-One Solution**: It provides a unified API for Detection -> Alignment -> Feature Extraction -> Recognition. Alternatives often require piecing together different libraries for these steps.
-3.  **Accuracy vs. Speed Balance**: The `TinyFaceDetector` offers a good trade-off. While less accurate than heavy server-side models, it is sufficient for "grouping" photos of clearly visible faces in a personal album context.
-4.  **Ease of Use**: The API is high-level and easy to integrate into a Vue/Nuxt application.
-5.  **Offline Capability**: Once models are loaded, no internet connection is required.
+- **`photos` ストア**: 写真メタデータ、検出された顔データ配列、サムネイルBlob。
+  - 主キー: `id` (写真ID)
+  - インデックス: `by-session` (セッションID), `by-timestamp` (撮影日時), `by-hash` (重複検知用ハッシュ)
+- **`sessions` ストア**: 取り込みセッション情報（ステータス、進捗、フォルダ名等）。
+  - 主キー: `id` (セッションID)
+- **`clusters` ストア**: 顔クラスタリング結果（人物ごとの重心ベクトル、サムネイルBlob、所属写真ID一覧）。
+  - 主キー: `id` (クラスタID)
 
-## Alternatives Considered
+また、ブラウザのキャッシュクリアや端末移行に備え、解析データやラベル設定をJSON形式でローカルに書き出し・復元できる **バックアップ/インポート機能** を併せて提供する。
 
-### 1. Cloud APIs (Google Cloud Vision, AWS Rekognition, Azure Face)
+## 採用理由
 
-- **Pros**: Extremely high accuracy, no burden on client device.
-- **Cons**:
-  - **Privacy concerns**: Users are uncomfortable uploading all personal photos.
-  - **Cost**: expensive for 10,000+ photos.
-  - **Latency**: Uploading gigabytes of photos takes too long.
-- **Verdict**: Rejected due to privacy and bandwidth constraints.
+1. **大容量ストレージのサポート**: LocalStorage（約5MB制限）と異なり、IndexedDBはディスク空き容量に応じた大容量（数百MB〜数十GB）を保存可能。
+2. **構造化データ・バイナリのネイティブ対応**: `Blob`（サムネイル画像）や `Float32Array`（特徴量ベクトル）をBase64変換などのオーバーヘッドなしに直接保存・復元できる。
+3. **インデックスによる高速検索**: セッションごとの写真一覧取得や、ハッシュによる重複写真の高速検知が可能。
+4. **非同期APIとトランザクション保証**: トランザクションによるデータ整合性の担保と、非同期処理によるUI描画のブロッキング防止。
+5. **優れたエコシステム (`idb`)**: Jake Archibald氏による `idb` ライブラリにより、Nuxt/TypeScript環境で軽量かつ型安全なPromiseベースの操作が実現できる。
 
-### 2. OpenCV.js (Haar Cascades / LBP)
+## 検討した代替案
 
-- **Pros**: Lightweight, standard library.
-- **Cons**:
-  - Traditional methods (Haar/LBP) are significantly less robust to lighting and angles than Deep Learning models.
-  - Does not provide a high-quality 128d face descriptor for clustering out-of-the-box.
-- **Verdict**: Rejected due to lower accuracy and lack of modern recognition features.
+### 1. LocalStorage / SessionStorage
 
-### 3. MediaPipe Face Detection (Google)
+- **メリット**: シンプルで直感的なAPI。
+- **デメリット**:
+  - 容量制限が約5MBと極めて小さく、数千枚の写真データやサムネイルを保存できない。
+  - 同期APIのため、読み書き時にUIスレッドがフリーズする。
+  - 文字列（DOMString）しか扱えないため、バイナリをBase64エンコードする必要があり、容量が約1.3倍に膨らむ。
+- **判定**: 容量・性能の両面で要件を満たさないため不採用。
 
-- **Pros**: Very fast, lightweight, modern.
-- **Cons**:
-  - Originally focused more on landmarks (Face Mesh) and detection.
-  - Getting a robust "Face Recognition" descriptor (for identity matching) is less straightforward than face-api.js which has a dedicated ResNet-34 model for it.
-- **Verdict**: Rejected for now, but valid as a future optimization candidate if face-api.js performance becomes a bottleneck.
+### 2. OPFS (Origin Private File System)
 
-## Consequences
+- **メリット**: ファイルシステムとしての低レイテンシ・高速なシーケンシャル読み書き。
+- **デメリット**:
+  - メタデータや特徴量ベクトルのインデックス検索を行うには、SQLite WASMなどの追加エンジンを導入する必要があり、導入コスト・バンドルサイズが増大する。
+  - ブラウザ間の実装状況やAPIの成熟度にばらつきがある。
+- **判定**: 現状の「サムネイル＋構造化メタデータ」の管理にはIndexedDBで十分高速であり、アーキテクチャの単純さを重視して不採用。
 
-- **Initial Load**: The user must download model weights (~10MB) on first load.
-- **Device Dependency**: Processing speed depends heavily on the user's GPU/CPU. Old phones/laptops may be slow.
-- **Memory Usage**: Loading models and processing images consumes significant RAM. We must use a Web Worker and manage memory (disposing tensors) carefully to prevent browser crashes.
+### 3. クラウドデータベース (Firebase, Supabase等)
+
+- **メリット**: 端末間同期が容易、バックアップの自動化。
+- **デメリット**:
+  - 児童の写真や個人情報をクラウドに送信しないという最大のプライバシー要件に抵触する。
+  - インフラ運用コストが発生する。
+- **判定**: コア理念である完全ローカル処理・プライバシー保護に反するため不採用。
+
+### 4. インメモリ保持のみ（非永続化）
+
+- **メリット**: 実装が最も容易でストレージ制限を考慮する必要がない。
+- **デメリット**:
+  - ページのリロードや誤ったタブ閉じで数時間の解析結果がすべて失われるため、実用に耐えない。
+- **判定**: UX要件を満たさないため不採用。
+
+## 影響・結果
+
+- **ストレージクォータと削除リスク**: ブラウザの空き容量が逼迫した場合や、長期間アクセスがない場合にブラウザによってデータが削除される可能性がある。これを補うため、JSONエクスポートによるローカルバックアップ機能の提供が必須となる。
+- **スキーマ管理**: データベースの構造変更時には `idb` の `upgrade` コールバックで適切にマイグレーション（インデックス追加やストア変更）を管理する必要がある。

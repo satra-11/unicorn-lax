@@ -1,73 +1,74 @@
-# ADR 001: Face Recognition Model Selection
+# ADR 001: 顔画像認識モデルの選定
 
-## Status
+## ステータス
 
-Accepted
+承認済み (Accepted)
 
-## Date
+## 日付
 
 2026-02-16
 
-## Context
+## コンテキスト
 
-The application is a client-side photo selection tool that helps users select photos of their children from a large set (up to 10,000 photos).
-The key requirements are:
+本アプリケーションは、最大10,000枚におよぶ大量の写真の中から、ユーザーが自身の子どもの写真を効率的に選定できるように支援するクライアントサイドの写真選別ツールである。
 
-1.  **Privacy**: Photos must not be uploaded to a server. Processing must happen locally.
-2.  **Performance**: Must be able to process thousands of photos in a reasonable time.
-3.  **Functionality**: Needs to detect faces and finding "similar" faces to group them (Clustering) without prior training data (Unsupervised / Semi-supervised).
-4.  **Cost**: Should be free to operate (no per-API-call costs).
+主な要件は以下の通り:
 
-## Decision
+1. **プライバシー**: 写真をサーバーにアップロードしてはならない。すべての処理をローカル環境（ブラウザ内）で完結させること。
+2. **パフォーマンス**: 数千枚の写真を現実的な時間内で処理できること。
+3. **機能要件**: 事前学習データがない状態（教師なし/半教師あり）で、顔の検出および「類似した顔」を自動でグループ化（クラスタリング）できること。
+4. **コスト**: 運用コストが無料であること（API呼び出しごとの従量課金が発生しないこと）。
 
-We have decided to use **face-api.js** running in a Web Worker.
+## 決定事項
 
-### Specific Models
+Web Worker上で動作する **face-api.js** を採用する。
 
-- **Detector**: `TinyFaceDetector` (MobileNetV1 based)
-  - Chosen for speed and smaller memory footprint compared to SSD MobileNet V1, which allows for faster processing of large batches of images in the browser.
-- **Landmarks**: `FaceLandmark68Net` (or `FaceLandmark68TinyNet`)
-  - Required for alignment before recognition.
-- **Recognition**: `FaceRecognitionNet` (ResNet-34 based)
-  - Outputs a 128-dimensional feature vector (descriptor) for each face.
+### 採用するモデル構成
 
-## Rationale
+- **顔検出器 (Detector)**: `TinyFaceDetector` (MobileNetV1ベース)
+  - SSD MobileNet V1と比較して高速かつメモリフットプリントが小さいため、ブラウザ内での大量バッチ処理に適している。
+- **ランドマーク検出 (Landmarks)**: `FaceLandmark68Net` (または `FaceLandmark68TinyNet`)
+  - 顔認識（特徴量抽出）前の顔の傾き補正・アライメント処理に必要。
+- **顔認識 (Recognition)**: `FaceRecognitionNet` (ResNet-34ベース)
+  - 各顔から128次元の特徴量ベクトル（記述子: descriptor）を出力する。
 
-1.  **Client-Side Execution**: face-api.js is built on top of TensorFlow.js and is optimized for running in the browser. It supports WebGL acceleration and WebAssembly (WASM) backends, making it viable for heavy client-side processing.
-2.  **All-in-One Solution**: It provides a unified API for Detection -> Alignment -> Feature Extraction -> Recognition. Alternatives often require piecing together different libraries for these steps.
-3.  **Accuracy vs. Speed Balance**: The `TinyFaceDetector` offers a good trade-off. While less accurate than heavy server-side models, it is sufficient for "grouping" photos of clearly visible faces in a personal album context.
-4.  **Ease of Use**: The API is high-level and easy to integrate into a Vue/Nuxt application.
-5.  **Offline Capability**: Once models are loaded, no internet connection is required.
+## 採用理由
 
-## Alternatives Considered
+1. **クライアントサイド実行**: face-api.jsはTensorFlow.jsをベースに構築されており、ブラウザ内での実行に最適化されている。WebGLアクセラレーションおよびWebAssembly (WASM) バックエンドをサポートしており、高負荷なクライアント処理を実現できる。
+2. **オールインワンの構成**: 顔検出 → アライメント → 特徴量抽出 → 類似度判定・認識に至る一連のフローを統合されたAPIで提供している。他の選択肢では複数のライブラリを組み合わせる必要がある。
+3. **精度と速度のバランス**: `TinyFaceDetector` は実用的なトレードオフを提供する。大規模なサーバーサイドモデルに比べると精度は劣るものの、個人のアルバムにおいて正面〜準正面を向いた明確な顔をグループ化する用途には十分である。
+4. **統合の容易さ**: 高レベルなAPIが用意されており、Vue/Nuxtアプリケーションへの組み込みが容易である。
+5. **オフライン対応**: 一度モデルファイルをダウンロードしてしまえば、インターネット接続なしで完全に動作する。
 
-### 1. Cloud APIs (Google Cloud Vision, AWS Rekognition, Azure Face)
+## 検討した代替案
 
-- **Pros**: Extremely high accuracy, no burden on client device.
-- **Cons**:
-  - **Privacy concerns**: Users are uncomfortable uploading all personal photos.
-  - **Cost**: expensive for 10,000+ photos.
-  - **Latency**: Uploading gigabytes of photos takes too long.
-- **Verdict**: Rejected due to privacy and bandwidth constraints.
+### 1. クラウドAPI (Google Cloud Vision, AWS Rekognition, Azure Face)
+
+- **メリット**: 非常に高い認識精度、クライアント端末への負荷がゼロ。
+- **デメリット**:
+  - **プライバシー上の懸念**: 個人（特に子ども）の写真をすべてクラウドに送信することに対する抵抗感が大きい。
+  - **コスト**: 10,000枚以上の写真処理ではAPI利用料が高額になる。
+  - **通信遅延・帯域**: 数ギガバイトの写真データをアップロードするのに長時間を要する。
+- **判定**: プライバシー保護とネットワーク制約の観点から不採用。
 
 ### 2. OpenCV.js (Haar Cascades / LBP)
 
-- **Pros**: Lightweight, standard library.
-- **Cons**:
-  - Traditional methods (Haar/LBP) are significantly less robust to lighting and angles than Deep Learning models.
-  - Does not provide a high-quality 128d face descriptor for clustering out-of-the-box.
-- **Verdict**: Rejected due to lower accuracy and lack of modern recognition features.
+- **メリット**: 軽量、標準的なコンピュータビジョンライブラリ。
+- **デメリット**:
+  - 伝統的な手法（Haar/LBP）はディープラーニングモデルに比べ、照明変化や顔の角度に対する頑健性が著しく低い。
+  - クラスタリングに使える高品質な128次元の顔特徴量ベクトルを標準で提供していない。
+- **判定**: 認識精度が低く、モダンな顔認識機能が不足しているため不採用。
 
 ### 3. MediaPipe Face Detection (Google)
 
-- **Pros**: Very fast, lightweight, modern.
-- **Cons**:
-  - Originally focused more on landmarks (Face Mesh) and detection.
-  - Getting a robust "Face Recognition" descriptor (for identity matching) is less straightforward than face-api.js which has a dedicated ResNet-34 model for it.
-- **Verdict**: Rejected for now, but valid as a future optimization candidate if face-api.js performance becomes a bottleneck.
+- **メリット**: 非常に高速で軽量、モダンな実装。
+- **デメリット**:
+  - 主に顔検出や詳細なメッシュ（Face Mesh）に特化している。
+  - 同一人物判定（クラスタリング）のための頑健な顔特徴量ベクトルの抽出が、専用のResNet-34を持つface-api.jsほど直感的・容易ではない。
+- **判定**: 現時点では不採用。ただし、将来的にface-api.jsの処理速度がボトルネックとなった場合の最適化候補として検討余地あり。
 
-## Consequences
+## 影響・結果
 
-- **Initial Load**: The user must download model weights (~10MB) on first load.
-- **Device Dependency**: Processing speed depends heavily on the user's GPU/CPU. Old phones/laptops may be slow.
-- **Memory Usage**: Loading models and processing images consumes significant RAM. We must use a Web Worker and manage memory (disposing tensors) carefully to prevent browser crashes.
+- **初期ロード**: 初回利用時にモデルの重みファイル（約10MB）をダウンロードする必要がある。
+- **端末スペックへの依存**: 処理速度はユーザーのGPU/CPU性能に大きく左右される。古いPCや低スペックな環境では処理に時間を要する可能性がある。
+- **メモリ管理**: モデルの読み込みや大量画像の処理は多くのRAMを消費する。ブラウザのクラッシュを防ぐため、Web Workerの活用およびテンソルの適切なメモリ解放（dispose）を徹底する必要がある。

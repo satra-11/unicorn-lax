@@ -1,6 +1,6 @@
 <script setup lang="ts">
 useHead({
-  title: 'Unicorn Lax — AI写真選定ツール',
+  title: 'Photo Lax — AI写真選定ツール',
   meta: [
     { name: 'viewport', content: 'width=device-width, initial-scale=1' },
     {
@@ -8,7 +8,7 @@ useHead({
       content:
         'AIが顔認識で写真を自動分類・選定。保育園・幼稚園のアルバム作成を90%効率化するブラウザ完結型ツール。',
     },
-    { property: 'og:title', content: 'Unicorn Lax — AI写真選定ツール' },
+    { property: 'og:title', content: 'Photo Lax — AI写真選定ツール' },
     {
       property: 'og:description',
       content:

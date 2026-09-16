@@ -257,7 +257,7 @@ onBeforeUnmount(() => {
           <h1
             class="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B6B] to-[#FF8E53] mb-2 tracking-tight"
           >
-            🦄 Unicorn Lax
+            📷 Photo Lax
           </h1>
           <p class="text-md md:text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
             思い出選びは、AIで<span class="font-bold text-gray-800">「楽（Lax）」</span>する。
@@ -315,7 +315,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
         <div class="text-center mt-20 text-gray-400 text-sm pb-8">
-          &copy; {{ new Date().getFullYear() }} Unicorn Lax. All processing is done locally.
+          &copy; {{ new Date().getFullYear() }} Photo Lax. All processing is done locally.
         </div>
       </div>
 

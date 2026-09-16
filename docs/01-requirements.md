@@ -1,4 +1,4 @@
-# Unicorn Lax 要件定義書
+# Photo Lax 要件定義書
 
 ## 1. プロジェクト概要
 

@@ -13,7 +13,7 @@
 
         <div class="prose prose-orange max-w-none">
           <p class="text-lg text-gray-600 mb-8">
-            Unicorn Laxを使って、大量の写真整理を効率化しましょう。
+            Photo Laxを使って、写真選びを楽しちゃおう。
           </p>
 
           <div class="space-y-8">

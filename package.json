@@ -20,6 +20,7 @@
     "face-api.js": "^0.22.2",
     "idb": "^8.0.3",
     "nuxt": "^4.3.1",
+    "onnxruntime-web": "^1.30.0",
     "tailwindcss": "^4.1.18"
   },
   "devDependencies": {

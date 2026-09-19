@@ -9,7 +9,6 @@ import type { FaceCluster, Photo } from '~/utils/types'
 import { selectGroupBalancedPhotos, selectGrowthPhotos } from '~/utils/selection-algorithm'
 import {
   clearExistingData,
-  clearPhotos,
   getLastSession,
 } from '~/utils/db'
 
@@ -161,19 +160,6 @@ const onResetDb = async () => {
   }
 }
 
-const onClearPhotos = async () => {
-  if (
-    confirm(
-      '写真だけを削除しますか？\n人物グループの設定はそのまま残りますが、写真の読み込みをやり直す必要があります。',
-    )
-  ) {
-    await clearPhotos()
-    window.location.reload()
-  }
-}
-
-
-
 // Thumbnail handling for step3
 const blobUrls = ref(new Map<string, string>())
 const clusterBlobUrls = ref(new Map<string, string>())
@@ -299,12 +285,6 @@ onBeforeUnmount(() => {
 
             <!-- Reset Actions -->
             <div class="pt-6 border-t border-[#FFE8D6] flex flex-wrap justify-center gap-4">
-              <button
-                class="px-4 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                @click="onClearPhotos"
-              >
-                写真だけ削除
-              </button>
               <button
                 class="px-4 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                 @click="onResetDb"

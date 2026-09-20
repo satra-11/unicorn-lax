@@ -240,10 +240,11 @@ onBeforeUnmount(() => {
       >
         <!-- Hero Section -->
         <div class="text-center px-4">
-          <h1
-            class="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B6B] to-[#FF8E53] mb-2 tracking-tight"
-          >
-            📷 Photo Lax
+          <h1 class="flex flex-row justify-center items-center gap-4 mb-2">
+            <img src="/logo.svg" alt="Photo Lax Logo" class="h-15 md:h-17" />
+            <span class="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B6B] to-[#FF8E53] tracking-tight">
+              Photo Lax
+            </span>
           </h1>
           <p class="text-md md:text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
             思い出選びは、AIで<span class="font-bold text-gray-800">「楽（Lax）」</span>する。

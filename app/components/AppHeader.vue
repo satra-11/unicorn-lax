@@ -24,9 +24,11 @@ const navLinks = [
         <!-- Logo -->
         <div class="flex-shrink-0 flex items-center">
           <NuxtLink to="/" class="flex items-center gap-2 group">
-            <span class="text-2xl pt-1 group-hover:scale-110 transition-transform duration-200"
-              >📷</span
-            >
+            <img 
+              src="/logo.svg" 
+              alt="Logo" 
+              class="h-8 w-8 group-hover:scale-110 transition-transform duration-200"
+            />
             <span
               class="font-bold text-xl tracking-tight text-gray-900 group-hover:text-[#FF6B6B] transition-colors"
             >

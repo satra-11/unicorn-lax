@@ -8,16 +8,7 @@ const isProcessing = ref(false)
 const progress = ref(0)
 const total = ref(0)
 const currentSession = ref<ProcessingSession | null>(null)
-const faceModel = ref<'ssd'>('ssd') // Default to SSD
 const processingStatus = ref('')
-
-// Initialize from localStorage if client-side
-if (import.meta.client) {
-  const saved = localStorage.getItem('face-model')
-  if (saved === 'ssd') {
-    faceModel.value = saved
-  }
-}
 
 let worker: Worker | null = null
 const pendingRequests = new Map<
@@ -66,7 +57,7 @@ const initWorker = () => {
       console.error('Worker error event:', e)
     }
 
-    console.log('Sending INIT message to worker with model:', faceModel.value)
+    console.log('Sending INIT message to worker')
     worker.postMessage({
       type: 'INIT',
       id: 'init'
@@ -76,12 +67,6 @@ const initWorker = () => {
   }
 }
 
-const setFaceModel = (model: 'ssd') => {
-  faceModel.value = model
-  if (import.meta.client) {
-    localStorage.setItem('face-model', model)
-  }
-}
 
 const detectFacesInWorker = async (photoId: string, imageBitmap: ImageBitmap) => {
   if (!worker) initWorker() // Ensure worker is init
@@ -176,41 +161,30 @@ export const usePhotoProcessor = () => {
             // 2. Check for duplicates in DB
             const existing = await getPhotoByHash(hash)
             if (existing) {
-              // Check if existing photo was analyzed with the SAME model
-              const modelMatch = existing.detectionModel === faceModel.value
-
-              if (modelMatch) {
-                if (existing.sessionId === session.id) {
-                  console.log('Skipping duplicate photo in same session (DB check):', file.name)
-                  progress.value++
-                  return
-                } else {
-                  console.log(
-                    'Found existing photo from previous session, reusing data:',
-                    file.name,
-                  )
-                  // Reuse existing analysis data but create new photo record for this session
-                  const reusedPhoto: Photo = {
-                    ...existing,
-                    id: crypto.randomUUID(),
-                    sessionId: session.id,
-                    name: file.name, // Use current file name just in case
-                    relativePath:
-                      (file as unknown as { webkitRelativePath?: string }).webkitRelativePath ||
-                      file.name,
-                    // Ensure we keep the hash & model
-                    hash,
-                    detectionModel: existing.detectionModel,
-                  }
-                  await savePhoto(reusedPhoto)
-                  progress.value++
-                  return
-                }
+              if (existing.sessionId === session.id) {
+                console.log('Skipping duplicate photo in same session (DB check):', file.name)
+                progress.value++
+                return
               } else {
                 console.log(
-                  `Re-analyzing photo ${file.name} due to model change (Old: ${existing.detectionModel}, New: ${faceModel.value})`,
+                  'Found existing photo from previous session, reusing data:',
+                  file.name,
                 )
-                // Proceed to re-analyze (fall through)
+                // Reuse existing analysis data but create new photo record for this session
+                const reusedPhoto: Photo = {
+                  ...existing,
+                  id: crypto.randomUUID(),
+                  sessionId: session.id,
+                  name: file.name, // Use current file name just in case
+                  relativePath:
+                    (file as unknown as { webkitRelativePath?: string }).webkitRelativePath ||
+                    file.name,
+                  // Ensure we keep the hash
+                  hash,
+                }
+                await savePhoto(reusedPhoto)
+                progress.value++
+                return
               }
             }
 
@@ -224,7 +198,6 @@ export const usePhotoProcessor = () => {
               timestamp: meta.timestamp,
               dateStr: meta.dateStr,
               hash,
-              detectionModel: faceModel.value,
             }
 
             if (worker) {
@@ -375,8 +348,6 @@ export const usePhotoProcessor = () => {
     progress,
     total,
     currentSession,
-    faceModel,
-    setFaceModel,
     processingStatus,
   }
 }

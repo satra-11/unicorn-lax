@@ -50,6 +50,7 @@ export interface SelectionWeights {
   orientation: number // 0-1 (Looking at camera)
   blur: number // 0-1 (Sharpness)
   groupBalance: number // 0 (Solo) to 1 (Group)
+  sceneDiversity: number // 0-1 (Diverse backgrounds)
 }
 
 export async function selectGroupBalancedPhotos(
@@ -62,6 +63,7 @@ export async function selectGroupBalancedPhotos(
     orientation: 0,
     blur: 0,
     groupBalance: 0.5, // Default to neutral/fairness
+    sceneDiversity: 0.5, // Default to moderate diversity
   },
 ): Promise<Photo[]> {
   const db = await getDB()
@@ -89,6 +91,7 @@ export async function selectGroupBalancedPhotos(
 
   const selected: (typeof scoredPhotos)[0][] = []
   const subjectCounts = new Map<string, number>()
+  const categoryCounts = new Map<string, number>()
   targetClusters.forEach((c) => subjectCounts.set(c.id, 0))
 
   // Clone matched array to pick from
@@ -165,9 +168,18 @@ export async function selectGroupBalancedPhotos(
       const variance = newCounts.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / numSubjects
       const stdDev = Math.sqrt(variance)
 
-      // Score = (Number of Faces) + (Quality Score) - (K * StdDev)
-      // Base value is faces count (efficiency), modulated by quality and fairness.
-      const score = candidate.subjects.length + qualityScore - K * stdDev
+      // Calculate Scene Diversity Penalty
+      let diversityPenalty = 0
+      if (candidate.photo.category) {
+        const cat = candidate.photo.category
+        const currentCount = categoryCounts.get(cat) || 0
+        // Penalty scales with how many we already have, modulated by the weight
+        diversityPenalty = currentCount * weights.sceneDiversity * 2
+      }
+
+      // Score = (Number of Faces) + (Quality Score) - (K * StdDev) - DiversityPenalty
+      // Base value is faces count (efficiency), modulated by quality, fairness, and diversity.
+      const score = candidate.subjects.length + qualityScore - K * stdDev - diversityPenalty
 
       if (score > maxScore) {
         maxScore = score
@@ -183,6 +195,12 @@ export async function selectGroupBalancedPhotos(
       best.subjects.forEach((subId) => {
         subjectCounts.set(subId, (subjectCounts.get(subId) || 0) + 1)
       })
+      if (best.photo.category) {
+        categoryCounts.set(
+          best.photo.category,
+          (categoryCounts.get(best.photo.category) || 0) + 1,
+        )
+      }
 
       // Remove from pool
       pool.splice(bestCandidateIndex, 1)

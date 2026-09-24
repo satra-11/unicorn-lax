@@ -23,6 +23,7 @@ export interface Photo {
   thumbnail?: Blob
   excluded?: boolean
   hash?: string
+  category?: string
   matchedSubjects?: string[] // Added to track which selected subjects appear in this photo
 }
 

@@ -231,6 +231,7 @@ export const usePhotoProcessor = () => {
                     tiltScore?: number
                   }>
                   blurScore: number
+                  sceneCategory?: string
                   width: number
                   height: number
                 }
@@ -240,6 +241,7 @@ export const usePhotoProcessor = () => {
                   photo.width = detectionResult.width
                   photo.height = detectionResult.height
                   photo.blurScore = detectionResult.blurScore
+                  photo.category = detectionResult.sceneCategory
 
                   // Create a FRESH bitmap from the file for thumbnail cropping
                   let cropBitmap: ImageBitmap | undefined

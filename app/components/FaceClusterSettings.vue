@@ -188,45 +188,44 @@ const getPhotoUrl = (photo: Photo) => {
                 <h3 class="text-sm font-semibold text-gray-900">
                   {{ isUnrecognized ? '写真の一覧' : 'このグループの写真' }}
                 </h3>
-                <p v-if="!isUnrecognized" class="text-xs text-gray-500 mt-1">
-                  違う人の写真がまざっていたら、写真の左上のボタンから正しい人のグループへ移動できます。
+                <p v-if="!isUnrecognized" class="text-sm text-gray-600 mt-1">
+                  違う人の写真がまざっていたら、写真の右下にある「移動する」ボタンから正しい人のグループへ移動できます。
                 </p>
-                <p v-else class="text-xs text-gray-500 mt-1">顔が見つからなかった写真です。</p>
+                <p v-else class="text-sm text-gray-600 mt-1">顔が見つからなかった写真です。</p>
               </div>
             </div>
 
             <div
-              class="grid grid-cols-4 sm:grid-cols-5 gap-3 max-h-80 overflow-y-auto border border-gray-200 p-3 rounded-lg bg-gray-50/50"
+              class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[50vh] overflow-y-auto border border-gray-200 p-4 rounded-xl bg-gray-50"
             >
               <div
                 v-for="photo in photos"
                 :key="photo.id"
-                class="relative aspect-square cursor-pointer group rounded-lg overflow-hidden shadow-sm transition-all hover:shadow-md"
+                class="relative aspect-square rounded-xl overflow-hidden shadow-sm border border-gray-200 transition-all hover:shadow-md bg-white"
                 :class="{ 'cursor-default': isUnrecognized }"
               >
                 <img
                   v-if="photo.thumbnail"
                   :src="getPhotoUrl(photo)"
                   class="w-full h-full object-cover transition-opacity duration-200"
-                  :class="isUnrecognized ? 'opacity-100' : 'opacity-100'"
                 />
                 <div
                   v-else
-                  class="w-full h-full bg-gray-200 flex items-center justify-center text-[10px] text-gray-400"
+                  class="w-full h-full bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-400"
                 >
-                  No Img
+                  No Image
                 </div>
 
-                <!-- Move Button (Top Left) -->
+                <!-- Move Button (Always visible) -->
                 <button
                   v-if="!isUnrecognized"
-                  class="absolute top-1 left-1 bg-white/90 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20 hover:bg-white hover:text-[#FF6B6B] shadow-sm"
-                  title="Move to another person"
+                  class="absolute bottom-2 right-2 bg-white/95 text-gray-700 hover:text-[#FF6B6B] hover:border-[#FFD4C4] px-3 py-2 rounded-lg z-20 shadow border border-gray-200 font-bold text-xs flex items-center gap-1.5 transition-colors"
+                  title="別の人のグループへ移動"
                   @click.stop="openMoveModal(photo)"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    class="h-4 w-4 text-gray-600 hover:text-[#FF6B6B]"
+                    class="h-4 w-4"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -235,9 +234,10 @@ const getPhotoUrl = (photo: Photo) => {
                       stroke-linecap="round"
                       stroke-linejoin="round"
                       stroke-width="2"
-                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                      d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
                     />
                   </svg>
+                  移動する
                 </button>
               </div>
             </div>
@@ -270,54 +270,83 @@ const getPhotoUrl = (photo: Photo) => {
         class="absolute inset-0 bg-black/60 backdrop-blur-sm"
         @click="showMoveModal = false"
       ></div>
-      <div class="relative bg-white rounded-lg shadow-xl max-w-sm w-full p-6 z-10">
-        <h3 class="text-lg font-bold text-gray-900 mb-4">別の人のグループへ移動</h3>
-        <p class="text-sm text-gray-600 mb-4">
-          選んだ写真を別の人のグループへ移します。<br />
-          移動すると、自動的にグループが調整されます。
-        </p>
-
-        <div class="space-y-2 max-h-60 overflow-y-auto mb-4 border rounded p-2">
-          <button
-            v-for="target in targetClusters"
-            :key="target.id"
-            class="w-full text-left px-3 py-2 text-sm rounded transition-colors flex items-center gap-2"
-            :class="
-              selectedTargetClusterId === target.id
-                ? 'bg-[#FFF5F0] text-[#FF6B6B] font-bold ring-2 ring-[#FF6B6B] ring-inset'
-                : 'text-gray-700 hover:bg-gray-50'
-            "
-            @click="selectedTargetClusterId = target.id"
-          >
-            <div class="w-6 h-6 bg-gray-200 rounded-full overflow-hidden flex-shrink-0">
-              <!-- Simple thumbnail for target -->
-              <img
-                v-if="target.thumbnail"
-                :src="getThumbnailUrl(target)"
-                class="w-full h-full object-cover"
-              />
+      <div class="relative bg-white rounded-2xl shadow-xl max-w-4xl w-full p-6 z-10 flex flex-col md:flex-row gap-8 max-h-[90vh]">
+        
+        <!-- Left: Image Preview -->
+        <div class="w-full md:w-1/2 flex flex-col">
+          <h3 class="text-xl font-bold text-gray-900 mb-2">この写真を移動します</h3>
+          <p class="text-sm text-gray-600 mb-4">
+            別の人のグループへ移動すると、AIが自動的に他の写真も再調整します。
+          </p>
+          <div class="relative w-full aspect-square rounded-2xl overflow-hidden bg-gray-100 border border-gray-200">
+            <img
+              v-if="moveTargetPhoto.thumbnail"
+              :src="getPhotoUrl(moveTargetPhoto)"
+              class="w-full h-full object-contain"
+            />
+            <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
+              No Image
             </div>
-            <span class="truncate">{{ target.label }}</span>
-          </button>
-          <div v-if="targetClusters.length === 0" class="text-center text-gray-400 py-4 text-sm">
-            移動できるグループがありません。
           </div>
         </div>
 
-        <div class="flex justify-end gap-3">
-          <button
-            class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            @click="showMoveModal = false"
-          >
-            キャンセル
-          </button>
-          <button
-            class="px-4 py-2 text-sm font-medium text-white bg-[#FF6B6B] rounded-lg hover:bg-[#e55a5a] shadow-md shadow-orange-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            :disabled="!selectedTargetClusterId"
-            @click="handleMove"
-          >
-            移動する
-          </button>
+        <!-- Right: Target Selection -->
+        <div class="w-full md:w-1/2 flex flex-col flex-1 min-h-0">
+          <h3 class="text-xl font-bold text-gray-900 mb-4">移動先を選んでください</h3>
+          
+          <div class="space-y-3 overflow-y-auto flex-1 mb-6 p-2 bg-gray-50 rounded-xl">
+            <button
+              v-for="target in targetClusters"
+              :key="target.id"
+              class="w-full text-left p-4 text-base rounded-xl transition-all flex items-center gap-6 bg-white border shadow-sm hover:shadow-md"
+              :class="
+                selectedTargetClusterId === target.id
+                  ? 'border-[#FF6B6B] bg-[#FFF5F0] text-[#FF6B6B] font-bold ring-2 ring-[#FF6B6B]'
+                  : 'border-gray-200 text-gray-700'
+              "
+              @click="selectedTargetClusterId = target.id"
+            >
+              <div class="w-20 h-20 md:w-24 md:h-24 bg-gray-200 rounded-full overflow-hidden flex-shrink-0 border-[3px] border-white shadow-sm">
+                <img
+                  v-if="target.thumbnail"
+                  :src="getThumbnailUrl(target)"
+                  class="w-full h-full object-cover"
+                />
+              </div>
+              <span class="truncate flex-1 font-bold text-xl md:text-2xl">{{ target.label }}</span>
+              <div
+                class="w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors shrink-0"
+                :class="
+                  selectedTargetClusterId === target.id
+                    ? 'bg-[#FF6B6B] border-[#FF6B6B] text-white'
+                    : 'bg-white border-gray-300'
+                "
+              >
+                <svg v-if="selectedTargetClusterId === target.id" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+              </div>
+            </button>
+            <div v-if="targetClusters.length === 0" class="text-center text-gray-500 py-8 font-medium">
+              移動できるグループがありません。
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-2">
+            <button
+              class="px-5 py-3 text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+              @click="showMoveModal = false"
+            >
+              キャンセル
+            </button>
+            <button
+              class="px-6 py-3 text-sm font-bold text-white bg-[#FF6B6B] rounded-xl hover:bg-[#e55a5a] shadow-lg shadow-orange-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              :disabled="!selectedTargetClusterId"
+              @click="handleMove"
+            >
+              移動する
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -28,6 +28,7 @@ const weights = ref({
   orientation: 0,
   blur: 0,
   groupBalance: 1,
+  sceneDiversity: 0.5,
 })
 
 const stepDefs = [

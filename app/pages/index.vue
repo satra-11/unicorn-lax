@@ -11,6 +11,7 @@ import {
   clearExistingData,
   getLastSession,
 } from '~/utils/db'
+import { getSceneJapanese } from '~/utils/scene-translations'
 
 const { isProcessing, progress: _progress, total: _total, currentSession } = usePhotoProcessor()
 const step = ref<'upload' | 'step1' | 'step2' | 'step3'>('upload')
@@ -27,6 +28,7 @@ const weights = ref({
   orientation: 0,
   blur: 0,
   groupBalance: 1,
+  sceneDiversity: 0.5,
 })
 
 const stepDefs = [
@@ -611,6 +613,10 @@ onBeforeUnmount(() => {
                 <div class="flex justify-between">
                   <span>ブレ:</span>
                   <span class="font-medium">{{ getPhotoMetrics(photo).blur }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>シーン:</span>
+                  <span>{{ getSceneJapanese(photo?.category) }}</span>
                 </div>
               </div>
             </div>

@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type * as FaceApi from 'face-api.js'
+import onnxruntime from 'onnxruntime-web'
+onnxruntime.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/';
 
 // Environment configuration
 const MODELS_URL = '/models'
@@ -7,6 +9,8 @@ const MIN_CONFIDENCE = 0.45
 
 let faceapi: typeof FaceApi
 let isLoaded = false
+let placesSession: onnxruntime.InferenceSession | null = null
+let placesCategories: (string|undefined)[] = []
 
 // ----------------------------------------------------------------------
 // Polyfill Environment BEFORE importing face-api.js
@@ -125,6 +129,31 @@ async function loadModels() {
       await faceapi.nets.faceRecognitionNet.loadFromUri(MODELS_URL)
       // Load Expression Net
       await faceapi.nets.faceExpressionNet.loadFromUri(MODELS_URL)
+      // Place365 Load
+      const modelPath = '/models/place365_resnet18_fp32.onnx'
+      const dataPath = '/models/place365_resnet18_fp32.onnx.data'
+      
+      const [modelRes, dataRes] = await Promise.all([
+        fetch(modelPath),
+        fetch(dataPath)
+      ])
+      
+      const modelBuffer = await modelRes.arrayBuffer()
+      const dataBuffer = new Uint8Array(await dataRes.arrayBuffer())
+
+      placesSession = await onnxruntime.InferenceSession.create(modelBuffer, {
+        executionProviders: ['wasm'],
+        externalData: [
+          {
+            path: 'place365_resnet18_fp32.onnx.data',
+            data: dataBuffer
+          }
+        ]
+      })
+      
+      const response = await fetch('/categories_places365.txt')
+      const text = await response.text()
+      placesCategories = text.trim().split('\n').map(line => line.split(' ')[0])
     }
 
     isLoaded = true
@@ -135,6 +164,7 @@ async function loadModels() {
     throw error
   }
 }
+
 
 // ----------------------------------------------------------------------
 // Blur Detection (Laplacian Variance)
@@ -198,10 +228,79 @@ function detectBlur(imageData: ImageData): number {
 }
 
 // ----------------------------------------------------------------------
+// Scene Detection (Places365)
+// ----------------------------------------------------------------------
+async function detectScene(imageData: ImageData): Promise<string | undefined> {
+  if (!placesSession || placesCategories.length === 0) return undefined
+
+  try {
+    // 1. Resize to 244x244
+    // We can draw imageData to a canvas to resize it
+    const offCanvas = new OffscreenCanvas(244, 244)
+    const offCtx = offCanvas.getContext('2d')
+    if (!offCtx) return undefined
+    
+    // Create a temporary canvas with original dimensions to hold imageData
+    const origCanvas = new OffscreenCanvas(imageData.width, imageData.height)
+    const origCtx = origCanvas.getContext('2d')
+    if (!origCtx) return undefined
+    origCtx.putImageData(imageData, 0, 0)
+    
+    // Draw scaled down to 244x244
+    offCtx.drawImage(origCanvas, 0, 0, 244, 244)
+    const resizedData = offCtx.getImageData(0, 0, 244, 244)
+
+    // 2. Preprocess: RGB, normalize (ImageNet stats)
+    const floatData = new Float32Array(3 * 244 * 244)
+    const mean = [0.485, 0.456, 0.406]
+    const std = [0.229, 0.224, 0.225]
+    
+    for (let i = 0; i < 244 * 244; i++) {
+      const r = resizedData.data[i * 4]! / 255.0
+      const g = resizedData.data[i * 4 + 1]! / 255.0
+      const b = resizedData.data[i * 4 + 2]! / 255.0
+      
+      floatData[i] = (r - mean[0]!) / std[0]!
+      floatData[i + 244 * 244] = (g - mean[1]!) / std[1]!
+      floatData[i + 2 * 244 * 244] = (b - mean[2]!) / std[2]!
+    }
+
+    // 3. Inference
+    const inputName = placesSession.inputNames[0]!
+    const tensor = new onnxruntime.Tensor('float32', floatData, [1, 3, 244, 244])
+    const feeds: Record<string, onnxruntime.Tensor> = {}
+    feeds[inputName] = tensor
+    
+    const results = await placesSession.run(feeds)
+    
+    // 4. Postprocess
+    const outputName = placesSession.outputNames[0]!
+    const output = results[outputName]!.data as Float32Array
+    
+    let maxIdx = 0
+    let maxVal = -Infinity
+    for (let i = 0; i < output.length; i++) {
+      if (output[i]! > maxVal) {
+        maxVal = output[i]!
+        maxIdx = i
+      }
+    }
+    
+    return placesCategories[maxIdx]
+  } catch (error) {
+    console.error('Scene detection failed:', error)
+    return undefined
+  }
+}
+
+// ----------------------------------------------------------------------
 // Message Handling
 // ----------------------------------------------------------------------
 
-self.onmessage = async (e: MessageEvent) => {
+let isProcessingQueue = false
+const messageQueue: MessageEvent[] = []
+
+async function processMessage(e: MessageEvent) {
   const { type, payload, id } = e.data
 
   try {
@@ -250,20 +349,12 @@ self.onmessage = async (e: MessageEvent) => {
 
       // Calculate blur score
       const blurScore = imageData ? detectBlur(imageData) : 0
+      
+      // Calculate scene category
+      const sceneCategory = imageData ? await detectScene(imageData) : undefined
 
       const results = detections.map((d) => {
         // Calculate Pose (Pan/Tilt)
-        // Simple heuristic using nose and eye/jaw landmarks
-        // Not perfect but sufficient for "looking at camera" check
-        // Ideally use PnP algorithm but that requires 3D model reference
-
-        // face-api.js returns 68 points
-        // 30: Nose tip
-        // 0: Left jaw (actually right side of image)
-        // 16: Right jaw (left side of image)
-        // 27: Nose root (between eyes)
-        // 8: Chin
-
         const nose = d.landmarks.positions[30]
         const leftJaw = d.landmarks.positions[0]
         const rightJaw = d.landmarks.positions[16]
@@ -272,14 +363,7 @@ self.onmessage = async (e: MessageEvent) => {
         const jawWidth = Math.abs(rightJaw!.x - leftJaw!.x)
         const noseX = nose!.x
         const centerX = (leftJaw!.x + rightJaw!.x) / 2
-        // If nose is to the right of center (in image), they are looking right
-        // Normalize by jaw width/2
         const pan = (noseX - centerX) / (jawWidth / 2)
-        // pan 0 = front, -1 = left, 1 = right (approx)
-
-        // Tilt: nose length ratio? Or simple "is nose explicitly high/low"
-        // Just return 0 for now or simple heuristic if needed.
-        // Let's rely on Pan mostly for "looking away".
         const tilt = 0
 
         return {
@@ -298,6 +382,7 @@ self.onmessage = async (e: MessageEvent) => {
         payload: {
           faces: results,
           blurScore: blurScore,
+          sceneCategory: sceneCategory,
           width,
           height,
         },
@@ -310,5 +395,19 @@ self.onmessage = async (e: MessageEvent) => {
   } catch (err: any) {
     console.error('Worker Error:', err)
     postMessage({ type: 'ERROR', id, error: err.message || err.toString() })
+  }
+}
+
+self.onmessage = async (e: MessageEvent) => {
+  messageQueue.push(e)
+  if (!isProcessingQueue) {
+    isProcessingQueue = true
+    while (messageQueue.length > 0) {
+      const nextEvent = messageQueue.shift()
+      if (nextEvent) {
+        await processMessage(nextEvent)
+      }
+    }
+    isProcessingQueue = false
   }
 }

@@ -25,3 +25,10 @@ logs
 !.env.example
 
 /sample_images
+
+.venv
+
+*.onnx
+*.onnx.data
+*.pth.tar
+categories_places365.txt

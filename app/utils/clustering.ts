@@ -1,6 +1,7 @@
 import * as faceapi from 'face-api.js'
 import type { Photo, FaceCluster } from './types'
 import { getDB, saveCluster, getAllClusters, deleteCluster } from './db'
+import { chineseWhispers, type CWNode } from './chinese-whispers'
 
 // Threshold for face similarity. 0.6 is standard for dlib/face-api.js
 export const CLUSTER_THRESHOLD = 0.4
@@ -67,55 +68,78 @@ export async function clusterFaces(sessionId: string): Promise<FaceCluster[]> {
     `[Cluster] Processing ${facesToCluster.length} faces against ${clusters.length} clusters (${trainedClusters.length} user-trained).`,
   )
 
-  // 4. Match faces against clusters
-  for (const face of facesToCluster) {
-    let bestMatchIndex = -1
-    let minDistance = Infinity
+  // 4. Run Chinese Whispers clustering
+  const nodes: CWNode[] = []
+  
+  // Add existing clusters as fixed nodes to preserve them
+  for (let i = 0; i < clusters.length; i++) {
+    nodes.push({
+      id: i,
+      descriptor: clusters[i]!.descriptor,
+      classId: i,
+      isFixed: true,
+      meta: { isCluster: true, clusterIndex: i }
+    })
+  }
 
-    // Compare with existing (and potentially new) clusters
-    for (let i = 0; i < clusters.length; i++) {
-      const cluster = clusters[i]!
+  // Add new faces
+  const offset = clusters.length
+  for (let i = 0; i < facesToCluster.length; i++) {
+    nodes.push({
+      id: offset + i,
+      descriptor: facesToCluster[i]!.descriptor,
+      classId: offset + i,
+      meta: { isCluster: false, face: facesToCluster[i] }
+    })
+  }
 
-      // Use cluster-specific threshold or default
-      const threshold = cluster.config?.similarityThreshold ?? CLUSTER_THRESHOLD
+  chineseWhispers(nodes, CLUSTER_THRESHOLD, 20)
 
-      const distance = faceapi.euclideanDistance(
-        Array.from(face.descriptor),
-        Array.from(cluster.descriptor),
-      )
+  // 5. Process Chinese Whispers results
+  const classGroups = new Map<number, typeof facesToCluster>()
+  for (const node of nodes) {
+    if (node.meta.isCluster) continue
+    
+    const group = classGroups.get(node.classId) || []
+    group.push(node.meta.face)
+    classGroups.set(node.classId, group)
+  }
 
-      if (distance < threshold && distance < minDistance) {
-        minDistance = distance
-        bestMatchIndex = i
-      }
-    }
-
-    if (bestMatchIndex !== -1) {
-      // Add to existing cluster
-      const matched = clusters[bestMatchIndex]!
-      matched.photoIds.push(face.photoId)
-      if (!matched.thumbnail && face.thumbnail) {
-        matched.thumbnail = face.thumbnail
+  for (const [classId, faces] of classGroups.entries()) {
+    if (classId < clusters.length) {
+      // Assigned to an existing cluster
+      const matched = clusters[classId]!
+      for (const face of faces) {
+        matched.photoIds.push(face.photoId)
+        if (!matched.thumbnail && face.thumbnail) {
+          matched.thumbnail = face.thumbnail
+        }
       }
     } else {
-      // Log distances to trained clusters when no match found
-      if (trainedClusters.length > 0) {
-        const distances = trainedClusters.map((c) => ({
-          label: c.label,
-          distance: faceapi
-            .euclideanDistance(Array.from(face.descriptor), Array.from(c.descriptor))
-            .toFixed(3),
-          threshold: (c.config?.similarityThreshold ?? CLUSTER_THRESHOLD).toFixed(2),
-        }))
-        console.log(`[Cluster] No match for face in photo ${face.photoId}:`, distances)
+      // Create a new cluster from the group
+      const firstFace = faces[0]!
+      let descriptor = firstFace.descriptor
+
+      if (faces.length > 1) {
+        const dims = descriptor.length
+        const mean = new Float32Array(dims)
+        for (const f of faces) {
+          for (let i = 0; i < dims; i++) {
+            mean[i] = (mean[i] ?? 0) + (f.descriptor[i] ?? 0)
+          }
+        }
+        for (let i = 0; i < dims; i++) {
+          mean[i] = (mean[i] ?? 0) / faces.length
+        }
+        descriptor = mean
       }
 
       const newCluster: FaceCluster = {
         id: crypto.randomUUID(),
         label: `人物 ${clusters.length + 1}`,
-        descriptor: face.descriptor,
-        photoIds: [face.photoId],
-        thumbnail: face.thumbnail,
+        descriptor,
+        photoIds: faces.map(f => f.photoId),
+        thumbnail: firstFace.thumbnail,
         config: { similarityThreshold: CLUSTER_THRESHOLD },
       }
       clusters.push(newCluster)

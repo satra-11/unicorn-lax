@@ -133,7 +133,7 @@ const getThumbnailUrl = (blob?: Blob) => {
             <div class="flex flex-col items-center gap-2.5 flex-1 min-w-0">
               <div class="relative">
                 <div
-                  class="w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 ring-2 ring-[#FFD4C4] shadow-lg"
+                  class="w-32 h-32 rounded-2xl overflow-hidden bg-gray-100 ring-2 ring-[#FFD4C4] shadow-lg"
                 >
                   <img
                     v-if="currentPair.clusterA.thumbnail"
@@ -187,7 +187,7 @@ const getThumbnailUrl = (blob?: Blob) => {
             <div class="flex flex-col items-center gap-2.5 flex-1 min-w-0">
               <div class="relative">
                 <div
-                  class="w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 ring-2 ring-[#FFDBC4] shadow-lg"
+                  class="w-32 h-32 rounded-2xl overflow-hidden bg-gray-100 ring-2 ring-[#FFDBC4] shadow-lg"
                 >
                   <img
                     v-if="currentPair.clusterB.thumbnail"

@@ -90,9 +90,9 @@ export async function selectGroupBalancedPhotos(
   // 4. Incorporate Quality Scores (Smile, Blur, etc.)
 
   const selected: (typeof scoredPhotos)[0][] = []
-  const subjectCounts = new Map<string, number>()
+  const clusterCounts = new Map<string, number>()
   const categoryCounts = new Map<string, number>()
-  targetClusters.forEach((c) => subjectCounts.set(c.id, 0))
+  targetClusters.forEach((c) => clusterCounts.set(c.id, 0))
 
   // Clone matched array to pick from
   const pool = [...matched]
@@ -156,7 +156,7 @@ export async function selectGroupBalancedPhotos(
       const qualityScore = photoQualityScores.get(candidate.photo.id) || 0
 
       // Calculate potential new counts if this candidate is selected
-      const tempCounts = new Map(subjectCounts)
+      const tempCounts = new Map(clusterCounts)
       candidate.clusters.forEach((subId) => {
         tempCounts.set(subId, (tempCounts.get(subId) || 0) + 1)
       })
@@ -193,7 +193,7 @@ export async function selectGroupBalancedPhotos(
 
       // Update subject counts
       best.clusters.forEach((subId) => {
-        subjectCounts.set(subId, (subjectCounts.get(subId) || 0) + 1)
+        clusterCounts.set(subId, (clusterCounts.get(subId) || 0) + 1)
       })
       if (best.photo.category) {
         categoryCounts.set(

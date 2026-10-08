@@ -6,20 +6,20 @@ import * as faceapi from 'face-api.js'
 
 interface ScoredPhoto {
   photo: Photo
-  subjects: string[]
+  clusters: string[]
   matchedFaces: NonNullable<Photo['faces']>
   matched: boolean
 }
 
-function matchPhotoToSubjects(
+function crossMatchFacesToClusters(
   photo: Photo,
   targetClusters: FaceCluster[],
-): { subjects: string[]; matchedFaces: NonNullable<Photo['faces']>; matched: boolean } {
+): { clusters: string[]; matchedFaces: NonNullable<Photo['faces']>; matched: boolean } {
   if (!photo.faces || photo.faces.length === 0) {
-    return { subjects: [], matchedFaces: [], matched: false }
+    return { clusters: [], matchedFaces: [], matched: false }
   }
 
-  const subjects = new Set<string>()
+  const matchedClusters = new Set<string>()
   const matchedFaces: NonNullable<Photo['faces']> = []
 
   for (const face of photo.faces) {
@@ -27,20 +27,20 @@ function matchPhotoToSubjects(
     for (const cluster of targetClusters) {
       const threshold = cluster.config?.similarityThreshold ?? CLUSTER_THRESHOLD
       if (faceapi.euclideanDistance(face.descriptor, cluster.descriptor) < threshold) {
-        subjects.add(cluster.id)
+        matchedClusters.add(cluster.id)
         isMatch = true
       }
     }
     if (isMatch) matchedFaces.push(face)
   }
 
-  return { subjects: Array.from(subjects), matchedFaces, matched: subjects.size > 0 }
+  return { clusters: Array.from(matchedClusters), matchedFaces, matched: matchedClusters.size > 0 }
 }
 
 function buildScoredPhotos(allPhotos: Photo[], targetClusters: FaceCluster[]): ScoredPhoto[] {
   return allPhotos.map((photo) => {
-    const { subjects, matchedFaces, matched } = matchPhotoToSubjects(photo, targetClusters)
-    return { photo: { ...photo }, subjects, matchedFaces, matched }
+    const { clusters, matchedFaces, matched } = crossMatchFacesToClusters(photo, targetClusters)
+    return { photo: { ...photo }, clusters, matchedFaces, matched }
   })
 }
 
@@ -133,11 +133,11 @@ export async function selectGroupBalancedPhotos(
     const bias = (weights.groupBalance - 0.5) * 2
     if (bias > 0) {
       // Prefer Group: Bonus for > 1 subject
-      if (img.subjects.length > 1) qScore += bias * 2
+      if (img.clusters.length > 1) qScore += bias * 2
     } else if (bias < 0) {
       // Prefer Solo: Bonus for == 1 subject (by subtracting bias which is negative)
       // Or simpler: Penalty for > 1
-      if (img.subjects.length === 1) qScore -= bias * 2 // bias is neg, so this adds score
+      if (img.clusters.length === 1) qScore -= bias * 2 // bias is neg, so this adds score
     }
 
     photoQualityScores.set(img.photo.id, qScore)
@@ -157,7 +157,7 @@ export async function selectGroupBalancedPhotos(
 
       // Calculate potential new counts if this candidate is selected
       const tempCounts = new Map(subjectCounts)
-      candidate.subjects.forEach((subId) => {
+      candidate.clusters.forEach((subId) => {
         tempCounts.set(subId, (tempCounts.get(subId) || 0) + 1)
       })
 
@@ -179,7 +179,7 @@ export async function selectGroupBalancedPhotos(
 
       // Score = (Number of Faces) + (Quality Score) - (K * StdDev) - DiversityPenalty
       // Base value is faces count (efficiency), modulated by quality, fairness, and diversity.
-      const score = candidate.subjects.length + qualityScore - K * stdDev - diversityPenalty
+      const score = candidate.clusters.length + qualityScore - K * stdDev - diversityPenalty
 
       if (score > maxScore) {
         maxScore = score
@@ -192,7 +192,7 @@ export async function selectGroupBalancedPhotos(
       selected.push(best)
 
       // Update subject counts
-      best.subjects.forEach((subId) => {
+      best.clusters.forEach((subId) => {
         subjectCounts.set(subId, (subjectCounts.get(subId) || 0) + 1)
       })
       if (best.photo.category) {
@@ -210,7 +210,7 @@ export async function selectGroupBalancedPhotos(
   // Sort selected photos by time for the album
   selected.sort((a, b) => a.photo.timestamp - b.photo.timestamp)
 
-  return selected.map((p) => ({ ...p.photo, matchedSubjects: p.subjects }))
+  return selected.map((p) => ({ ...p.photo, matchedSubjects: p.clusters }))
 }
 
 export async function selectGrowthPhotos(
@@ -263,12 +263,10 @@ export async function selectGrowthPhotos(
             : prev,
         )
 
-        selected.push({ ...best.photo, matchedSubjects: best.subjects })
+        selected.push({ ...best.photo, matchedSubjects: best.clusters })
       }
     }
   }
 
-  // const unmatchedPhotos = unmatched.map((p) => p.photo)
-  // return [...selected, ...unmatchedPhotos]
   return selected
 }

@@ -7,6 +7,12 @@ const navLinks = [
     external: false,
   },
   {
+    label: '技術情報',
+    to: '/tech/score',
+    icon: 'i-lucide-wrench',
+    external: false,
+  },
+  {
     label: 'GitHub',
     to: 'https://github.com/satra-11/unicorn-lax',
     icon: 'i-simple-icons-github',
